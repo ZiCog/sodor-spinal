@@ -22,6 +22,7 @@ This is my first ever non-trivial SpinalHDL design and my first ever attempt at 
 ### Status
 
 2018-04-08 : Incomplete. Just started. The result of a long Easter weekend hacking session. Not tested in any way.
+             It does at least generate Verilog and that Verilog passes through Yosys without error.
 
 
 
