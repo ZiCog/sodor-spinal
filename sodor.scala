@@ -223,7 +223,7 @@ class UType extends Component {
   io.uTypeImmediate := S(io.instruction(31 downto 12) ## B(0, 12 bits))
 }
 
-class RegFilexx extends Component {
+class RegFile extends Component {
   val io = new Bundle {
     val instruction = in UInt(32 bits)
     val wd = in SInt(32 bits)
@@ -387,6 +387,7 @@ class Decode extends Component {
   val funct3 = B(io.instruction(14 downto 12))
   val funct3x = B(io.instruction(31)) ## B(io.instruction(14 downto 12))
 
+  // The control signals map is borrowed from the Sodor 1-stage Chisle implementation. Adapted to do it my way!
   val controlSignals = Map(
               // val  |  BR  |  op1   |   op2     |  ALU    |  wb  | rf   | mem  | mem  | mask |  csr
               // inst | type |   sel  |    sel    |   fcn   |  sel | wen  |  en  |  wr  | type |  cmd
@@ -700,7 +701,7 @@ class Sodor extends Component {
   uType.io.instruction := instruction
   val uTypeImmediate = uType.io.uTypeImmediate
 
-  val regFilexx = new RegFilexx
+  val regFile = new RegFile
   regFilexx.io.instruction := instruction
   regFilexx.io.wd := wd
   regFilexx.io.en := True           // FIXME Control Signal
