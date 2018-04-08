@@ -1,4 +1,4 @@
-package sodor
+package Sodor
 
 import spinal.core._
 import spinal.lib._
@@ -387,80 +387,79 @@ class Decode extends Component {
   val funct3 = B(io.instruction(14 downto 12))
   val funct3x = B(io.instruction(31)) ## B(io.instruction(14 downto 12))
 
-  // The control signals map is borrowed from the Sodor 1-stage Chisle implementation. Adapted to do it my way!
-  val controlSignals = Map(
-              // val  |  BR  |  op1   |   op2     |  ALU    |  wb  | rf   | mem  | mem  | mask |  csr
-              // inst | type |   sel  |    sel    |   fcn   |  sel | wen  |  en  |  wr  | type |  cmd
-    "INVALID" -> (False,BR.N  , OP1.X  , OP2.X   , ALU.X   ,  WB.X  , False, False,False,  MT.X,  CSR.N),
-    "LW"      -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.ADD ,  WB.MEM, True,  True, False, MT.W,  CSR.N),
-    "LB"      -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.ADD ,  WB.MEM, True,  True, False, MT.B,  CSR.N),
-    "LBU"     -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.ADD ,  WB.MEM, True,  True, False, MT.BU, CSR.N),
-    "LH"      -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.ADD ,  WB.MEM, True,  True, False, MT.H,  CSR.N),
-    "LHU"     -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.ADD ,  WB.MEM, True,  True, False, MT.HU, CSR.N),
-    "SW"      -> (True, BR.N  , OP1.RS1, OP2.IMS , ALU.ADD ,  WB.X  , False, True, True, MT.W,  CSR.N),
-    "SB"      -> (True, BR.N  , OP1.RS1, OP2.IMS , ALU.ADD ,  WB.X  , False, True, True, MT.B,  CSR.N),
-    "SH"      -> (True, BR.N  , OP1.RS1, OP2.IMS , ALU.ADD ,  WB.X  , False, True, True, MT.H,  CSR.N),
+  val controlSignals = Map (
+              //  val   | BR    | op1     | op2     | ALU       | wb     | rf    | mem   | mem   | mask  | csr   |
+              //  inst  | type  | sel     | sel     | fcn       | sel    | wen   | en    | wr    | type  | cmd   |
+    "INVALID" -> (False , BR.N  , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
+    "LW"      -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.ADD   , WB.MEM , True  , True  , False , MT.W  , CSR.N),
+    "LB"      -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.ADD   , WB.MEM , True  , True  , False , MT.B  , CSR.N),
+    "LBU"     -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.ADD   , WB.MEM , True  , True  , False , MT.BU , CSR.N),
+    "LH"      -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.ADD   , WB.MEM , True  , True  , False , MT.H  , CSR.N),
+    "LHU"     -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.ADD   , WB.MEM , True  , True  , False , MT.HU , CSR.N),
+    "SW"      -> (True  , BR.N  , OP1.RS1 , OP2.IMS , ALU.ADD   , WB.X   , False , True  , True  , MT.W  , CSR.N),
+    "SB"      -> (True  , BR.N  , OP1.RS1 , OP2.IMS , ALU.ADD   , WB.X   , False , True  , True  , MT.B  , CSR.N),
+    "SH"      -> (True  , BR.N  , OP1.RS1 , OP2.IMS , ALU.ADD   , WB.X   , False , True  , True  , MT.H  , CSR.N),
 
-    "AUIPC"   -> (True, BR.N  , OP1.IMU, OP2.PC  , ALU.ADD ,  WB.ALU, True,  False, False,  MT.X,  CSR.N),
-    "LUI"     -> (True, BR.N  , OP1.IMU, OP2.X   , ALU.COPY1, WB.ALU, True,  False, False,  MT.X,  CSR.N),
+    "AUIPC"   -> (True  , BR.N  , OP1.IMU , OP2.PC  , ALU.ADD   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "LUI"     -> (True  , BR.N  , OP1.IMU , OP2.X   , ALU.COPY1 , WB.ALU , True  , False , False , MT.X  , CSR.N),
 
-    "ADDI"    -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.ADD ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "ANDI"    -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.AND ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "ORI"     -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.OR  ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "XORI"    -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.XOR ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SLTI"    -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.SLT ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SLTIU"   -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.SLTU,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SLLI"    -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.SLL ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SRAI"    -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.SRA ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SRLI"    -> (True, BR.N  , OP1.RS1, OP2.IMI , ALU.SRL ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
+    "ADDI"    -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.ADD   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "ANDI"    -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.AND   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "ORI"     -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.OR    , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "XORI"    -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.XOR   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SLTI"    -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.SLT   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SLTIU"   -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.SLTU  , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SLLI"    -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.SLL   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SRAI"    -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.SRA   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SRLI"    -> (True  , BR.N  , OP1.RS1 , OP2.IMI , ALU.SRL   , WB.ALU , True  , False , False , MT.X  , CSR.N),
 
-    "SLL"     -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.SLL ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "ADD"     -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.ADD ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SUB"     -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.SUB ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SLT"     -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.SLT ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SLTU"    -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.SLTU,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "AND"     -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.AND ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "OR"      -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.OR  ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "XOR"     -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.XOR ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SRA"     -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.SRA ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
-    "SRL"     -> (True, BR.N  , OP1.RS1, OP2.RS2 , ALU.SRL ,  WB.ALU, True,  False, False , MT.X,  CSR.N),
+    "SLL"     -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.SLL   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "ADD"     -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.ADD   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SUB"     -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.SUB   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SLT"     -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.SLT   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SLTU"    -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.SLTU  , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "AND"     -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.AND   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "OR"      -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.OR    , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "XOR"     -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.XOR   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SRA"     -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.SRA   , WB.ALU , True  , False , False , MT.X  , CSR.N),
+    "SRL"     -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.SRL   , WB.ALU , True  , False , False , MT.X  , CSR.N),
 
-    "JAL"     -> (True, BR.J  , OP1.X  , OP2.X   , ALU.X   ,  WB.PC4, True,  False, False , MT.X,  CSR.N),
-    "JALR"    -> (True, BR.JR , OP1.RS1, OP2.IMI , ALU.X   ,  WB.PC4, True,  False, False , MT.X,  CSR.N),
-    "BEQ"     -> (True, BR.EQ , OP1.X  , OP2.X   , ALU.X   ,  WB.X  , False, False, False , MT.X,  CSR.N),
-    "BNE"     -> (True, BR.NE , OP1.X  , OP2.X   , ALU.X   ,  WB.X  , False, False, False , MT.X,  CSR.N),
-    "BGE"     -> (True, BR.GE , OP1.X  , OP2.X   , ALU.X   ,  WB.X  , False, False, False , MT.X,  CSR.N),
-    "BGEU"    -> (True, BR.GEU, OP1.X  , OP2.X   , ALU.X   ,  WB.X  , False, False, False , MT.X,  CSR.N),
-    "BLT"     -> (True, BR.LT , OP1.X  , OP2.X   , ALU.X   ,  WB.X  , False, False, False , MT.X,  CSR.N),
-    "BLTU"    -> (True, BR.LTU, OP1.X  , OP2.X   , ALU.X   ,  WB.X  , False, False, False , MT.X,  CSR.N),
+    "JAL"     -> (True , BR.J   , OP1.X   , OP2.X   , ALU.X     , WB.PC4 , True  , False , False , MT.X  , CSR.N),
+    "JALR"    -> (True , BR.JR  , OP1.RS1 , OP2.IMI , ALU.X     , WB.PC4 , True  , False , False , MT.X  , CSR.N),
+    "BEQ"     -> (True , BR.EQ  , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
+    "BNE"     -> (True , BR.NE  , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
+    "BGE"     -> (True , BR.GE  , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
+    "BGEU"    -> (True , BR.GEU , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
+    "BLT"     -> (True , BR.LT  , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
+    "BLTU"    -> (True , BR.LTU , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
 
-    "CSRRWI"  -> (True, BR.N  , OP1.IMZ, OP2.X   , ALU.COPY1, WB.CSR, True,  False, False,  MT.X,  CSR.W),
-    "CSRRSI"  -> (True, BR.N  , OP1.IMZ, OP2.X   , ALU.COPY1, WB.CSR, True,  False, False,  MT.X,  CSR.S),
-    "CSRRCI"  -> (True, BR.N  , OP1.IMZ, OP2.X   , ALU.COPY1, WB.CSR, True,  False, False,  MT.X,  CSR.C),
-    "CSRRW"   -> (True, BR.N  , OP1.RS1, OP2.X   , ALU.COPY1, WB.CSR, True,  False, False,  MT.X,  CSR.W),
-    "CSRRS"   -> (True, BR.N  , OP1.RS1, OP2.X   , ALU.COPY1, WB.CSR, True,  False, False,  MT.X,  CSR.S),
-    "CSRRC"   -> (True, BR.N  , OP1.RS1, OP2.X   , ALU.COPY1, WB.CSR, True,  False, False,  MT.X,  CSR.C),
+    "CSRRWI"  -> (True , BR.N   , OP1.IMZ , OP2.X   , ALU.COPY1 , WB.CSR , True  , False , False,  MT.X  , CSR.W),
+    "CSRRSI"  -> (True , BR.N   , OP1.IMZ , OP2.X   , ALU.COPY1 , WB.CSR , True  , False , False,  MT.X  , CSR.S),
+    "CSRRCI"  -> (True , BR.N   , OP1.IMZ , OP2.X   , ALU.COPY1 , WB.CSR , True  , False , False,  MT.X  , CSR.C),
+    "CSRRW"   -> (True , BR.N   , OP1.RS1 , OP2.X   , ALU.COPY1 , WB.CSR , True  , False , False,  MT.X  , CSR.W),
+    "CSRRS"   -> (True , BR.N   , OP1.RS1 , OP2.X   , ALU.COPY1 , WB.CSR , True  , False , False,  MT.X  , CSR.S),
+    "CSRRC"   -> (True , BR.N   , OP1.RS1 , OP2.X   , ALU.COPY1 , WB.CSR , True  , False , False,  MT.X  , CSR.C),
 
-    "ECALL"   -> (True, BR.N  , OP1.X  , OP2.X  ,  ALU.X    , WB.X  , False, False, False , MT.X,  CSR.I),
-    "MRET"    -> (True, BR.N  , OP1.X  , OP2.X  ,  ALU.X    , WB.X  , False, False, False , MT.X,  CSR.I),
-    "DRET"    -> (True, BR.N  , OP1.X  , OP2.X  ,  ALU.X    , WB.X  , False, False, False , MT.X,  CSR.I),
-    "EBREAK"  -> (True, BR.N  , OP1.X  , OP2.X  ,  ALU.X    , WB.X  , False, False, False , MT.X,  CSR.I),
-    "WFI"     -> (True, BR.N  , OP1.X  , OP2.X  ,  ALU.X    , WB.X  , False, False, False , MT.X,  CSR.N), // implemented as a NOP
+    "ECALL"   -> (True , BR.N   , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False, False , MT.X   , CSR.I),
+    "MRET"    -> (True , BR.N   , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False, False , MT.X   , CSR.I),
+    "DRET"    -> (True , BR.N   , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False, False , MT.X   , CSR.I),
+    "EBREAK"  -> (True , BR.N   , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False, False , MT.X   , CSR.I),
+    "WFI"     -> (True , BR.N   , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False, False , MT.X   , CSR.N), // implemented as a NOP
 
-    "FENCE.I" -> (True, BR.N  , OP1.X  , OP2.X  ,  ALU.X    , WB.X  , False, False, False , MT.X,  CSR.N),
-    "FENCE"   -> (True, BR.N  , OP1.X  , OP2.X  ,  ALU.X    , WB.X  , False, True,  False , MT.X,  CSR.N)
+    "FENCE.I" -> (True , BR.N   , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False, False , MT.X   , CSR.N),
+    "FENCE"   -> (True , BR.N   , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , True,  False , MT.X   , CSR.N)
     // we are already sequentially consistent, so no need to honor the fence instruction
   )
 
   def lookupControlSignals(s: String ): UInt = {
     val (insValid, branchType, op1Sel, op2Sel, aluFun, wbSel, rfWen, memEnable, memWr, memMask, csrCmd) = controlSignals(s)
-    io.aluFun := aluFun.asBits;
-    io.pcSel := 0;
-    io.op1Sel := op1Sel.asBits;
-    io.op2Sel := op2Sel.asBits;
-    io.wbSel := wbSel.asBits;
-    io.rfWen := rfWen;
-    io.memVal := memEnable;
+    io.aluFun := aluFun.asBits
+    io.pcSel := 0
+    io.op1Sel := op1Sel.asBits
+    io.op2Sel := op2Sel.asBits
+    io.wbSel := wbSel.asBits
+    io.rfWen := rfWen
+    io.memVal := memEnable
     io.memRw := memWr
     return 0
   }
@@ -702,11 +701,11 @@ class Sodor extends Component {
   val uTypeImmediate = uType.io.uTypeImmediate
 
   val regFile = new RegFile
-  regFilexx.io.instruction := instruction
-  regFilexx.io.wd := wd
-  regFilexx.io.en := True           // FIXME Control Signal
-  rs1 := regFilexx.io.rs1
-  rs2 := regFilexx.io.rs2
+  regFile.io.instruction := instruction
+  regFile.io.wd := wd
+  regFile.io.en := True           // FIXME Control Signal
+  rs1 := regFile.io.rs1
+  rs2 := regFile.io.rs2
 
   val op1Mux = new Op1Mux
   op1Mux.io.uType := uTypeImmediate
@@ -759,4 +758,5 @@ object SodorVerilog {
     SpinalVerilog(new Sodor)
   }
 }
+
 
