@@ -8,7 +8,7 @@ import scala.util.Random
 
 // Allowed values of pcSel
 object pcSelections extends SpinalEnum {
-  val pcP4, jalr, branch, jump, exception = newElement()
+  val pc4, jalr, branch, jump, exception = newElement()
 }
 
 // Branch types
@@ -140,7 +140,7 @@ class PcMux extends Component {
     val pc = out SInt(32 bits)
   }
   switch(io.pcSel) {
-    is(pcSelections.pcP4.asBits) {
+    is(pcSelections.pc4.asBits) {
       io.pc := io.pc4
     }
     is(pcSelections.jalr.asBits) {
@@ -161,13 +161,21 @@ class PcMux extends Component {
   }
 }
 
+class JumpRegTargetGen extends Component {
+  val io = new Bundle {
+    val iTypeImmediate = in SInt (32 bits)
+    val rs1 = in SInt (32 bits)
+    val jalr = out SInt (32 bits)
+  }
+  io.jalr := (io.iTypeImmediate + io.rs1) & ~1
+}
+
 class BranchTargetGen extends Component {
   val io = new Bundle {
     val instruction = in UInt(32 bits)
     val pc = in SInt(32 bits)
     val branch = out SInt(32 bits)
   }
-
   val branchSignExtension = Bits(20 bits)
   branchSignExtension.setAllTo(io.instruction(31))
   val bTypeImmediate =  S(branchSignExtension ## io.instruction(7) ## io.instruction(30 downto 25) ## io.instruction(11 downto 8) ## B"0")
@@ -191,18 +199,7 @@ class ITypeSignExtend extends Component {
     val instruction = in UInt(32 bits)
     val iTypeImmediate = out SInt(32 bits)
   }
-  val iSignExtension = Bits(21 bits)
-  iSignExtension.setAllTo(io.instruction(31))
-  io.iTypeImmediate := S(iSignExtension ## io.instruction(30 downto 20))
-}
-
-class JumpRegTargetGen extends Component {
-  val io = new Bundle {
-    val iTypeImmediate = in SInt (32 bits)
-    val rs1 = in SInt (32 bits)
-    val jalr = out SInt (32 bits)
-  }
-  io.jalr := io.iTypeImmediate + io.rs1
+  io.iTypeImmediate := S(io.instruction) >> U(20)
 }
 
 class STypeSignExtend extends Component {
@@ -233,13 +230,33 @@ class RegFile extends Component {
   }
   val rs1Address = io.instruction(19 downto 15)
   val rs2Address = io.instruction(24 downto 20)
-  val regFile = Mem(UInt(32.bits), 32) init Seq(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+  val regFile = Mem(UInt(32 bits), 32) init Seq(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   io.rs1 := S(regFile.readAsync(address = rs1Address))
   io.rs2 := S(regFile.readAsync(address = rs2Address))
 
   val wa = io.instruction(11 downto 7)
   val rfWen = True
   regFile.write(wa, U(io.wd), io.en)
+}
+
+class BranchCondGen extends Component {
+  val io = new Bundle {
+    val rs1 = in SInt(32 bits)
+    val rs2 = in SInt(32 bits)
+    val brEq = out Bool
+    val brLt = out Bool
+    val brLtu = out Bool
+  }
+  io.brEq := False
+  io.brLt := False
+  io.brLtu := False
+  when (io.rs1 === io.rs2) {
+    io.brEq := True
+  }.elsewhen (io.rs1 < io.rs2) {
+    io.brLt := True
+  }.elsewhen (U(io.rs1) < U(io.rs2)) {
+    io.brLtu := True
+  }
 }
 
 class Op1Mux extends Component {
@@ -374,6 +391,9 @@ class Decode extends Component {
   // Decode RISC V instructions (The Hard Way!)
   val io = new Bundle {
     val instruction = in UInt(32 bits)
+    val brEq = in Bool
+    val brLt = in Bool
+    val brLtu = in Bool
     val pcSel = out Bits (3 bits)
     val aluFun = out Bits (4 bits)
     val op1Sel = out Bits (2 bits)
@@ -451,17 +471,18 @@ class Decode extends Component {
     // we are already sequentially consistent, so no need to honor the fence instruction
   )
 
-  def lookupControlSignals(s: String ): UInt = {
+  val branchType_ = Bits (4 bits)
+
+  def lookupControlSignals(s: String ) = {
     val (insValid, branchType, op1Sel, op2Sel, aluFun, wbSel, rfWen, memEnable, memWr, memMask, csrCmd) = controlSignals(s)
-    io.aluFun := aluFun.asBits
-    io.pcSel := 0
+    branchType_ := branchType.asBits
     io.op1Sel := op1Sel.asBits
     io.op2Sel := op2Sel.asBits
+    io.aluFun := aluFun.asBits
     io.wbSel := wbSel.asBits
     io.rfWen := rfWen
     io.memVal := memEnable
     io.memRw := memWr
-    return 0
   }
 
   lookupControlSignals("INVALID")
@@ -604,43 +625,59 @@ class Decode extends Component {
     is(opCodeSelections.system.asBits) {
     }
   }
+
+  // Branch logic
+  io.pcSel := pcSelections.pc4.asBits
+  when (((branchType_ === BR.EQ.asBits)  && (io.brEq  === True)) ||
+         (branchType_ === BR.NE.asBits)  && (io.brEq  === False) ||
+         (branchType_ === BR.LT.asBits)  && (io.brLt  === True)  ||
+         (branchType_ === BR.LTU.asBits) && (io.brLtu === True)  ||
+         (branchType_ === BR.GE.asBits)  && (io.brLt  === False) ||
+         (branchType_ === BR.GEU.asBits) && (io.brLtu === False))
+  {
+    io.pcSel := pcSelections.branch.asBits
+  }.elsewhen((branchType_ === BR.J.asBits)) {
+    io.pcSel := pcSelections.jump.asBits
+  }.elsewhen((branchType_ === BR.JR.asBits)) {
+    io.pcSel := pcSelections.jalr.asBits
+  }
 }
 
 class Sodor extends Component {
   val io = new Bundle {
-    val exception = in SInt(32.bits)
+    val exception = in SInt(32 bits)
     val instructionMemory = new Bundle {
-      val addr = out SInt(32.bits)
-      val data = in SInt(32.bits)
+      val addr = out SInt(32 bits)
+      val data = in SInt(32 bits)
       val valid = out Bool
     }
     val dataMemory = new Bundle {
-      val addr = out SInt(32.bits)
-      val wdata = out SInt(32.bits)
-      val rdata = in SInt(32.bits)
+      val addr = out SInt (32 bits)
+      val wdata = out SInt(32 bits)
+      val rdata = in SInt(32 bits)
       val rw = out Bool
       val valid = out Bool
     }
     val coprocessor = new Bundle {
-      val csr = in SInt(32.bits)
+      val csr = in SInt(32 bits)
     }
   }
   // The Program Counter
-  val pc = Reg(SInt(32.bits)) init 0
+  val pc = Reg(SInt(32 bits)) init 0
 
   // Program Counter plus 4
-  val pc4 = SInt(32.bits)
+  val pc4 = SInt(32 bits)
 
   // Data path signals
-  val branch = SInt(32.bits)
-  val jump = SInt(32.bits)
-  val jalr = SInt(32.bits)
-  val rs1 = SInt(32.bits)
-  val rs2 = SInt(32.bits)
-  val op1 = SInt(32.bits)
-  val op2 = SInt(32.bits)
-  val aluResult = SInt(32.bits)
-  val wd = SInt(32.bits)
+  val branch = SInt(32 bits)
+  val jump = SInt(32 bits)
+  val jalr = SInt(32 bits)
+  val rs1 = SInt(32 bits)
+  val rs2 = SInt(32 bits)
+  val op1 = SInt(32 bits)
+  val op2 = SInt(32 bits)
+  val aluResult = SInt(32 bits)
+  val wd = SInt(32 bits)
 
   // Control signals.
   val pcSel = Bits (3 bits)
@@ -651,8 +688,11 @@ class Sodor extends Component {
   val memRw = Bool
   val memVal = Bool
   val rfWen = Bool
+  val brEq = Bool
+  val brLt = Bool
+  val brLtu = Bool
 
-  val instruction = UInt(32.bits)
+  val instruction = UInt(32 bits)
 
   // Location of next instruction
   pc4 := pc + 4
@@ -707,6 +747,13 @@ class Sodor extends Component {
   rs1 := regFile.io.rs1
   rs2 := regFile.io.rs2
 
+  val branchCondGen = new BranchCondGen
+  branchCondGen.io.rs1 := rs1
+  branchCondGen.io.rs2 := rs2
+  brEq := branchCondGen.io.brEq
+  brLt := branchCondGen.io.brLt
+  brLtu := branchCondGen.io.brLtu
+
   val op1Mux = new Op1Mux
   op1Mux.io.uType := uTypeImmediate
   op1Mux.io.rs1 := rs1
@@ -742,6 +789,9 @@ class Sodor extends Component {
 
   val decode = new Decode
   decode.io.instruction := instruction
+  decode.io.brEq := brEq
+  decode.io.brLt := brLt
+  decode.io.brLtu := brLtu
   wbSel := decode.io.wbSel
   pcSel := decode.io.pcSel
   aluFun := decode.io.aluFun
@@ -755,7 +805,7 @@ class Sodor extends Component {
 // Generate the Sodor Verilog
 object SodorVerilog {
   def main(args: Array[String]) {
-    SpinalVerilog(new Sodor)
+    SpinalVerilog(new Sodor).printPruned().printUnused()
   }
 }
 
