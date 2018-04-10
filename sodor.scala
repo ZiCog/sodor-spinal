@@ -472,11 +472,11 @@ class Decode extends Component {
     // we are already sequentially consistent, so no need to honor the fence instruction
   )
 
-  val branchType_ = Bits (4 bits)
+  val branchType_ = BR()
 
   def lookupControlSignals(s: String ) = {
     val (insValid, branchType, op1Sel, op2Sel, aluFun, wbSel, rfWen, memEnable, memWr, memMask, csrCmd) = controlSignals(s)
-    branchType_ := branchType.asBits
+    branchType_ := branchType
     io.op1Sel := op1Sel.asBits
     io.op2Sel := op2Sel.asBits
     io.aluFun := aluFun.asBits
@@ -630,17 +630,17 @@ class Decode extends Component {
 
   // Branch logic
   io.pcSel := pcSelections.pc4.asBits
-  when (((branchType_ === BR.EQ.asBits)  && (io.brEq  === True)) ||
-         (branchType_ === BR.NE.asBits)  && (io.brEq  === False) ||
-         (branchType_ === BR.LT.asBits)  && (io.brLt  === True)  ||
-         (branchType_ === BR.LTU.asBits) && (io.brLtu === True)  ||
-         (branchType_ === BR.GE.asBits)  && (io.brLt  === False) ||
-         (branchType_ === BR.GEU.asBits) && (io.brLtu === False))
+  when (((branchType_ === BR.EQ)  && (io.brEq  === True)) ||
+         (branchType_ === BR.NE)  && (io.brEq  === False) ||
+         (branchType_ === BR.LT)  && (io.brLt  === True)  ||
+         (branchType_ === BR.LTU) && (io.brLtu === True)  ||
+         (branchType_ === BR.GE)  && (io.brLt  === False) ||
+         (branchType_ === BR.GEU) && (io.brLtu === False))
   {
     io.pcSel := pcSelections.branch.asBits
-  }.elsewhen((branchType_ === BR.J.asBits)) {
+  }.elsewhen((branchType_ === BR.J)) {
     io.pcSel := pcSelections.jump.asBits
-  }.elsewhen((branchType_ === BR.JR.asBits)) {
+  }.elsewhen((branchType_ === BR.JR)) {
     io.pcSel := pcSelections.jalr.asBits
   }
 }
