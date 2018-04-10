@@ -228,14 +228,15 @@ class RegFile extends Component {
     val rs1 = out SInt(32 bits)
     val rs2 = out SInt(32 bits)
   }
+  // Reading, rs1 and rs2
   val rs1Address = io.instruction(19 downto 15)
   val rs2Address = io.instruction(24 downto 20)
   val regFile = Mem(UInt(32 bits), 32) init Seq(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   io.rs1 := S(regFile.readAsync(address = rs1Address))
   io.rs2 := S(regFile.readAsync(address = rs2Address))
 
+  // Writing to register rd
   val wa = io.instruction(11 downto 7)
-  val rfWen = True
   regFile.write(wa, U(io.wd), io.en)
 }
 
@@ -480,11 +481,12 @@ class Decode extends Component {
     io.op2Sel := op2Sel.asBits
     io.aluFun := aluFun.asBits
     io.wbSel := wbSel.asBits
-    io.rfWen := rfWen
+    io.rfWen := rfWen               // TODO Inhibit rfWen on stall or exception.
     io.memVal := memEnable
     io.memRw := memWr
   }
 
+  // Assume instruction is invalid unless proven otherwise.
   lookupControlSignals("INVALID")
 
   // Decode (The Hard Way!)
@@ -743,7 +745,7 @@ class Sodor extends Component {
   val regFile = new RegFile
   regFile.io.instruction := instruction
   regFile.io.wd := wd
-  regFile.io.en := True           // FIXME Control Signal
+  regFile.io.en := rfWen
   rs1 := regFile.io.rs1
   rs2 := regFile.io.rs2
 
