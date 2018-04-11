@@ -241,28 +241,35 @@ class RegFile extends Component {
     val rs2 = out SInt(32 bits)
   }
 
-  // Reading, rs1 and rs2
   val rs1Address = io.instruction(19 downto 15)
   val rs2Address = io.instruction(24 downto 20)
+  val rs1 = SInt(32 bits)
+  val rs2 = SInt(32 bits)
   val wa = io.instruction(11 downto 7)
+  val wd = SInt(32 bits)
   val regFile = Mem(UInt(32 bits), 32) init Seq(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+  // Reading, rs1 and rs2
+  rs1 := S(regFile.readAsync(address = rs1Address))
   when (rs1Address =/= 0) {
-    io.rs1 := S(regFile.readAsync(address = rs1Address))
+    io.rs1 := rs1
   }.otherwise {
-    io.rs1 := 0
+    io.rs1 := S(0, 32 bits)
   }
+  rs2 := S(regFile.readAsync(address = rs2Address))
   when (rs2Address =/= 0) {
-    io.rs2 := S(regFile.readAsync(address = rs2Address))
+    io.rs2 := rs2
   }.otherwise {
-    io.rs2 := 0
+    io.rs2 := S(0, 32 bits)
   }
 
   // Writing to register rd
   when (wa === 0) {
-    regFile.write(wa, U(0), io.en)
+    wd := S(0, 32 bits)
   }.otherwise {
-    regFile.write(wa, U(io.wd), io.en)
+    wd := io.wd
   }
+  regFile.write(wa, U(wd), io.en)
 }
 
 class BranchCondGen extends Component {
