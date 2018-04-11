@@ -674,6 +674,9 @@ class Sodor extends Component {
   val branch = SInt(32 bits)
   val jump = SInt(32 bits)
   val jalr = SInt(32 bits)
+  val iTypeImmediate = SInt(32 bits)
+  val sTypeImmediate = SInt(32 bits)
+  val uTypeImmediate = SInt(32 bits)
   val rs1 = SInt(32 bits)
   val rs2 = SInt(32 bits)
   val op1 = SInt(32 bits)
@@ -727,7 +730,7 @@ class Sodor extends Component {
 
   val iTypeSignExtend = new ITypeSignExtend
   iTypeSignExtend.io.instruction := instruction
-  val iTypeImmediate = iTypeSignExtend.io.iTypeImmediate
+  iTypeImmediate := iTypeSignExtend.io.iTypeImmediate
 
   val jumpRegTargetGen = new JumpRegTargetGen
   jumpRegTargetGen.io.iTypeImmediate := iTypeImmediate
@@ -736,11 +739,11 @@ class Sodor extends Component {
 
   val sTypeSignExtend = new STypeSignExtend
   sTypeSignExtend.io.instruction := instruction
-  val sTypeImmediate = sTypeSignExtend.io.sTypeImmediate
+  sTypeImmediate := sTypeSignExtend.io.sTypeImmediate
 
   val uType = new UType
   uType.io.instruction := instruction
-  val uTypeImmediate = uType.io.uTypeImmediate
+  uTypeImmediate := uType.io.uTypeImmediate
 
   val regFile = new RegFile
   regFile.io.instruction := instruction
