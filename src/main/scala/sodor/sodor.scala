@@ -386,6 +386,9 @@ class Alu extends Component {
     is (ALU.AND.asBits) {
       io.alu := io.op1 & io.op2
     }
+    is (ALU.COPY1.asBits) {
+      io.alu := io.op1
+    }
     default {
       io.alu := io.op1
     }
