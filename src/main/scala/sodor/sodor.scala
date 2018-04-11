@@ -161,6 +161,18 @@ class PcMux extends Component {
   }
 }
 
+class ProgramCounter extends Component {
+  val io = new Bundle {
+    val pcNext = in SInt(32 bits)
+    val pc = out SInt(32 bits)
+    val pc4 = out SInt(32 bits)
+  }
+  val pc = Reg(SInt(32 bits)) init 0
+  pc := io.pcNext
+  io.pc := pc
+  io.pc4 := pc + 4
+}
+
 class JumpRegTargetGen extends Component {
   val io = new Bundle {
     val iTypeImmediate = in SInt (32 bits)
@@ -228,16 +240,29 @@ class RegFile extends Component {
     val rs1 = out SInt(32 bits)
     val rs2 = out SInt(32 bits)
   }
+
   // Reading, rs1 and rs2
   val rs1Address = io.instruction(19 downto 15)
   val rs2Address = io.instruction(24 downto 20)
+  val wa = io.instruction(11 downto 7)
   val regFile = Mem(UInt(32 bits), 32) init Seq(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-  io.rs1 := S(regFile.readAsync(address = rs1Address))
-  io.rs2 := S(regFile.readAsync(address = rs2Address))
+  when (rs1Address =/= 0) {
+    io.rs1 := S(regFile.readAsync(address = rs1Address))
+  }.otherwise {
+    io.rs1 := 0
+  }
+  when (rs2Address =/= 0) {
+    io.rs2 := S(regFile.readAsync(address = rs2Address))
+  }.otherwise {
+    io.rs2 := 0
+  }
 
   // Writing to register rd
-  val wa = io.instruction(11 downto 7)
-  regFile.write(wa, U(io.wd), io.en)
+  when (wa === 0) {
+    regFile.write(wa, U(0), io.en)
+  }.otherwise {
+    regFile.write(wa, U(io.wd), io.en)
+  }
 }
 
 class BranchCondGen extends Component {
@@ -664,15 +689,14 @@ class Sodor extends Component {
       val csr = in SInt(32 bits)
     }
   }
-  // The Program Counter
-  val pc = Reg(SInt(32 bits)) init 0
-
-  // Program Counter plus 4
-  val pc4 = SInt(32 bits)
 
   // Data path signals
+  val pc = SInt(32 bits)
+  val pc4 = SInt(32 bits)
+  val pcNext = SInt(32 bits)
   val branch = SInt(32 bits)
   val jump = SInt(32 bits)
+  val instruction = UInt(32 bits)
   val jalr = SInt(32 bits)
   val iTypeImmediate = SInt(32 bits)
   val sTypeImmediate = SInt(32 bits)
@@ -697,14 +721,6 @@ class Sodor extends Component {
   val brLt = Bool
   val brLtu = Bool
 
-  val instruction = UInt(32 bits)
-
-  // Location of next instruction
-  pc4 := pc + 4
-
-  io.instructionMemory.addr := pc
-  io.instructionMemory.valid := True
-
   val pcMux = new PcMux
   pcMux.io.pc4 := pc4
   pcMux.io.jalr := jalr
@@ -712,8 +728,15 @@ class Sodor extends Component {
   pcMux.io.jump := jump
   pcMux.io.exception := io.exception
   pcMux.io.pcSel := pcSel.asBits
-  pc := pcMux.io.pc
+  pcNext := pcMux.io.pc
 
+  val programCounter = new ProgramCounter
+  pc := programCounter.io.pc
+  pc4 := programCounter.io.pc4
+  programCounter.io.pcNext := pcNext
+
+  io.instructionMemory.addr := pc
+  io.instructionMemory.valid := True
   instruction := U(io.instructionMemory.data)
 
   // BranchTargetGen
@@ -787,11 +810,6 @@ class Sodor extends Component {
   wbMux.io.wbSel := wbSel.asBits
   wd := wbMux.io.wb
 
-  io.dataMemory.addr := aluResult
-  io.dataMemory.wdata := rs2
-  io.dataMemory.valid := memVal
-  io.dataMemory.rw := memRw
-
   val decode = new Decode
   decode.io.instruction := instruction
   decode.io.brEq := brEq
@@ -805,6 +823,11 @@ class Sodor extends Component {
   op1Sel := decode.io.op1Sel
   op2Sel := decode.io.op2Sel
   rfWen := decode.io.rfWen
+
+  io.dataMemory.addr := aluResult
+  io.dataMemory.wdata := rs2
+  io.dataMemory.valid := memVal
+  io.dataMemory.rw := memRw
 }
 
 // Generate the Sodor Verilog
