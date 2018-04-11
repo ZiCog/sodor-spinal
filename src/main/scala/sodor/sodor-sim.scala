@@ -13,20 +13,23 @@ object SodorSim {
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
 
+      var modelPcNext = 0;
+
       var idx = 0
       while(idx < 100){
 
         // Drive the dut inputs
-        dut.io.pcNext #= 0
+        dut.io.pcNext #= modelPcNext
 
         // Wait a rising edge on the clock
         dut.clockDomain.waitRisingEdge()
 
         // Check that the dut values match with the reference model ones
-        assert(dut.io.pc.toInt == 0)
-        assert(dut.io.pc4.toInt == 4)
+        println(modelPcNext, dut.io.pcNext.toInt, dut.io.pc.toInt, dut.io.pc4.toInt)
+        assert(dut.io.pc.toInt == modelPcNext)
+        assert(dut.io.pc4.toInt == modelPcNext + 4)
 
-        println(dut.io.pc4.toInt, dut.io.pc4.toInt)
+        modelPcNext = dut.io.pc4.toInt
 
         idx += 1
       }
