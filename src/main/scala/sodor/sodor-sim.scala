@@ -23,6 +23,7 @@ object SodorSim {
 
         // Wait a rising edge on the clock
         dut.clockDomain.waitRisingEdge()
+        dut.clockDomain.waitFallingEdge()
 
         // Check that the dut values match with the reference model ones
         println(modelPcNext, dut.io.pcNext.toInt, dut.io.pc.toInt, dut.io.pc4.toInt)

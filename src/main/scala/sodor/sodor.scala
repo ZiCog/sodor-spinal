@@ -168,9 +168,11 @@ class ProgramCounter extends Component {
     val pc4 = out SInt(32 bits)
   }
   val pc = Reg(SInt(32 bits)) init 0
-  val pc4 = Reg(SInt(32 bits)) init 0
-  io.pc := io.pcNext
-  io.pc4 := io.pcNext + 4
+  val pc4 = SInt(32 bits)
+  pc := io.pcNext
+  pc4 := pc + 4
+  io.pc := pc
+  io.pc4 := pc4
 }
 
 class JumpRegTargetGen extends Component {
