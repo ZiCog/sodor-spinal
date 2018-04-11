@@ -814,4 +814,9 @@ object SodorVerilog {
   }
 }
 
-
+// Generate the Sodor VHDL
+object SodorVhdl {
+  def main(args: Array[String]) {
+    SpinalVhdl(new Sodor).printPruned().printUnused()
+  }
+}
