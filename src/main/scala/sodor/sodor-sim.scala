@@ -45,6 +45,7 @@ object SodorSim {
       dut.programCounter.io.pc4.simPublic()
       dut.programCounter.io.pc.simPublic()
       dut.programCounter.io.pcNext.simPublic()
+      dut.pc.simPublic()
       dut.jalr.simPublic()
       dut.branch.simPublic()
       dut.jump.simPublic()
@@ -102,7 +103,7 @@ object SodorSim {
       }
     }
 
-    compiled.doSim("test_uTypeImmediate") { dut =>
+    compiled.doSim("test_UType") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
@@ -128,7 +129,7 @@ object SodorSim {
       assert(dut.uTypeImmediate.toInt == -4096)
     }
 
-    compiled.doSim("test_iTypeImmediate") { dut =>
+    compiled.doSim("test_ITypeSignExtend") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
@@ -154,7 +155,7 @@ object SodorSim {
       assert(dut.iTypeImmediate.toInt == -1)
     }
 
-    compiled.doSim("test_sTypeImmediate") { dut =>
+    compiled.doSim("test_STypeSignExtend") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
@@ -178,6 +179,45 @@ object SodorSim {
       // Check that the dut values match with the reference model ones
       println("sType = ", dut.sTypeImmediate.toInt)
       assert(dut.sTypeImmediate.toInt == -1)
+    }
+
+    compiled.doSim("test_JumpTargetGen") { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000000111111111111", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("pc = ", dut.programCounter.io.pc.toInt)
+      println("jump = ", dut.jump.toInt)
+      assert(dut.pc.toInt == 0)
+      assert(dut.jump.toInt == 0)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("11111111111111111111000000000000", 2)
+
+      // Advance PC to 32 by waiting 8 clocks.
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("pc = ", dut.programCounter.io.pc.toInt)
+      println("jump = ", dut.jump.toInt)
+      assert(dut.pc.toInt == 32)
+      assert(dut.jump.toInt == 30)
+
+      // TODO MORE JAL target tests required..
     }
   }
 }
