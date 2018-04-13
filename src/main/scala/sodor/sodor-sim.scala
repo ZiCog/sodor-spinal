@@ -45,6 +45,14 @@ object SodorSim {
       dut.programCounter.io.pc4.simPublic()
       dut.programCounter.io.pc.simPublic()
       dut.programCounter.io.pcNext.simPublic()
+      dut.jalr.simPublic()
+      dut.branch.simPublic()
+      dut.jump.simPublic()
+      dut.iTypeImmediate.simPublic()
+      dut.sTypeImmediate.simPublic()
+      dut.uTypeImmediate.simPublic()
+      dut.rs1.simPublic()
+      dut.rs2.simPublic()
       dut
     }
 
@@ -54,7 +62,7 @@ object SodorSim {
       dut.clockDomain.forkStimulus(period = 10)
 
       var idx = 0
-      while (idx < 100) {
+      while (idx < 10) {
 
         // Wait a rising edge on the clock
         dut.clockDomain.waitRisingEdge()
@@ -69,29 +77,55 @@ object SodorSim {
       }
     }
 
-    compiled.doSim("testB") { dut =>
+    compiled.doSim("test_ProgramCounter") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
 
       var idx = 0
-      while(idx < 100){
+      while(idx < 10){
 
         // Drive the dut inputs
         dut.io.instructionMemory.data #= Integer.parseInt("00000000000000000000000000010011", 2)  // NOP (ADDI)
-        //        dut.programCounter.io.pcNext #= modelPcNext
 
         // Wait a rising edge on the clock
         dut.clockDomain.waitRisingEdge()
 
         // Check that the dut values match with the reference model ones
-        println(dut.programCounter.io.pc.toInt, dut.programCounter.io.pc4.toInt)
+        println("pc = ", dut.programCounter.io.pc.toInt)
+        println("pc4 = ", dut.programCounter.io.pc4.toInt)
+        println("iTypeImmediate = ", dut.iTypeImmediate.toInt)
         //    assert(dut.io.pc.toInt == modelPcNext)
         //   assert(dut.io.pc4.toInt == modelPcNext + 4)
 
-
         idx += 1
       }
+    }
+
+    compiled.doSim("test_UType") { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000000111111111111", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("uType = ", dut.uTypeImmediate.toInt)
+      assert(dut.uTypeImmediate.toInt == 0)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("11111111111111111111000000000000", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("uType = ", dut.uTypeImmediate.toInt)
+      assert(dut.uTypeImmediate.toInt == -4096)
     }
   }
 }
