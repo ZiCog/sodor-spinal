@@ -181,7 +181,8 @@ object SodorSim {
       assert(dut.sTypeImmediate.toInt == -1)
     }
 
-    compiled.doSim("test_JumpTargetGen") { dut =>
+    compiled.doSim("test_JumpTargetGen")
+    { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
@@ -218,6 +219,46 @@ object SodorSim {
       assert(dut.jump.toInt == 30)
 
       // TODO MORE JAL target tests required..
+    }
+
+    compiled.doSim("test_BranchTargetGen")
+    { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000001111111111111000001111111", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("pc = ", dut.programCounter.io.pc.toInt)
+      println("branch = ", dut.branch.toInt)
+      assert(dut.pc.toInt == 0)
+      assert(dut.branch.toInt == 0)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("11111110000000000000111110000000", 2)
+
+      // Advance PC to 32 by waiting 8 clocks.
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("pc = ", dut.programCounter.io.pc.toInt)
+      println("branch = ", dut.branch.toInt)
+      assert(dut.pc.toInt == 32)
+      assert(dut.branch.toInt == 30)
+
+      // TODO MORE BRANCH target tests required..
     }
   }
 }
