@@ -127,5 +127,32 @@ object SodorSim {
       println("uType = ", dut.uTypeImmediate.toInt)
       assert(dut.uTypeImmediate.toInt == -4096)
     }
+
+    compiled.doSim("test_ITypeImmediate") { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000011111111111111111111", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("iType = ", dut.iTypeImmediate.toInt)
+      assert(dut.iTypeImmediate.toInt == 0)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("11111111111100000000000000000000", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("iType = ", dut.iTypeImmediate.toInt)
+      assert(dut.iTypeImmediate.toInt == -1)
+    }
   }
 }
+
