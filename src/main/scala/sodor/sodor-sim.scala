@@ -25,7 +25,7 @@ object SodorSim {
       dut.rs2.simPublic()
       dut
     }
-    
+
     compiled.doSim("test_ProgramCounter") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
@@ -205,6 +205,37 @@ object SodorSim {
       println("branch = ", dut.branch.toInt)
       assert(dut.pc.toInt == 32)
       assert(dut.branch.toInt == 30)
+
+      // TODO MORE BRANCH target tests required..
+    }
+
+    compiled.doSim("test_JumpRegTargetGen") { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000011111111111111111111", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("rs1 = ", dut.rs1.toInt)
+      println("jalr = ", dut.jalr.toInt)
+      assert(dut.rs1.toInt == 0)
+      assert(dut.jalr.toInt == 0)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("11111111111100000000000000000000", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("rs1 = ", dut.rs1.toInt)
+      println("jalr = ", dut.jalr.toInt)
+      assert(dut.jalr.toInt == -2)
 
       // TODO MORE BRANCH target tests required..
     }
