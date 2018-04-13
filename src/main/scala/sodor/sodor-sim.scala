@@ -102,7 +102,7 @@ object SodorSim {
       }
     }
 
-    compiled.doSim("test_UType") { dut =>
+    compiled.doSim("test_uTypeImmediate") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
@@ -128,7 +128,7 @@ object SodorSim {
       assert(dut.uTypeImmediate.toInt == -4096)
     }
 
-    compiled.doSim("test_ITypeImmediate") { dut =>
+    compiled.doSim("test_iTypeImmediate") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
@@ -152,6 +152,32 @@ object SodorSim {
       // Check that the dut values match with the reference model ones
       println("iType = ", dut.iTypeImmediate.toInt)
       assert(dut.iTypeImmediate.toInt == -1)
+    }
+
+    compiled.doSim("test_sTypeImmediate") { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000001111111111111000001111111", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("iType = ", dut.sTypeImmediate.toInt)
+      assert(dut.sTypeImmediate.toInt == 0)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("11111110000000000000111110000000", 2)
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("sType = ", dut.sTypeImmediate.toInt)
+      assert(dut.sTypeImmediate.toInt == -1)
     }
   }
 }
