@@ -701,17 +701,6 @@ class Sodor extends Component {
     }
   }
 
-  class Counter1 extends Component {
-    val io = new Bundle {
-      val count = out SInt(32 bits)
-    }
-    val count = Reg(SInt(32 bits)) init 0
-    count := count + 1
-    io.count := count
-  }
-  val counter1 = new Counter1
-
-
   // Data path signals
   val pc = SInt(32 bits)
   val pc4 = SInt(32 bits)
