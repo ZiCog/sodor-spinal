@@ -32,6 +32,7 @@ object SodorSim {
       dut.regFile.wd.simPublic()
       dut.regFile.wa.simPublic()
       dut.rfWen.simPublic()
+      dut.io.dataMemory.addr.simPublic()
       dut
     }
 
@@ -255,7 +256,7 @@ object SodorSim {
       dut.clockDomain.forkStimulus(period = 10)
 
       // Drive the dut inputs
-      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000010000110000011", 2) // lw r3, r0, 0
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000100000000010000110000011", 2) // lw r3, r0, 8
       dut.io.dataMemory.rdata #= 42
 
       // Wait a rising edge on the clock
@@ -267,18 +268,24 @@ object SodorSim {
       println("opSel2 = ", dut.op2Sel.toInt)
       println("aluFun = ", dut.aluFun.toInt)
       println("aluResult = ", dut.aluResult.toInt)
+      println("dataMemory.addr = ", dut.io.dataMemory.addr.toInt)
       println("wbSel = ", dut.wbSel.toInt)
       println("wa = ", dut.regFile.wa.toInt)
       println("wd = ", dut.regFile.wd.toInt)
       println("rfWen = ", dut.rfWen.toInt)
 
+      assert(dut.rs1.toInt == 0)
+      assert(dut.op1Sel.toInt  == 0)
+      assert(dut.op2Sel.toInt  == 0)
       assert(dut.aluFun.toInt == 0)
+      assert(dut.aluResult.toInt == 8)
+      assert(dut.io.dataMemory.addr.toInt == 8)
       assert(dut.wbSel.toInt == 0)
       assert(dut.regFile.wa.toInt == 3)
       assert(dut.regFile.wd.toInt == 42)
       assert(dut.rfWen.toInt == 1)
 
-      // TODO MORE BRANCH target tests required..
+      // TODO MORE BRANCH load tests required.
     }
   }
 }
