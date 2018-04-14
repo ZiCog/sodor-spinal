@@ -23,6 +23,15 @@ object SodorSim {
       dut.uTypeImmediate.simPublic()
       dut.rs1.simPublic()
       dut.rs2.simPublic()
+      dut.op1Sel.simPublic()
+      dut.op2Sel.simPublic()
+      dut.wbSel.simPublic()
+      dut.aluFun.simPublic()
+      dut.aluResult.simPublic()
+      dut.rfWen.simPublic()
+      dut.regFile.wd.simPublic()
+      dut.regFile.wa.simPublic()
+      dut.rfWen.simPublic()
       dut
     }
 
@@ -236,6 +245,38 @@ object SodorSim {
       println("rs1 = ", dut.rs1.toInt)
       println("jalr = ", dut.jalr.toInt)
       assert(dut.jalr.toInt == -2)
+
+      // TODO MORE BRANCH target tests required..
+    }
+
+    compiled.doSim("test_LW") { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000010000110000011", 2) // lw r3, r0, 0
+      dut.io.dataMemory.rdata #= 42
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+      println("rs1 = ", dut.rs1.toInt)
+      println("opSel1 = ", dut.op1Sel.toInt)
+      println("opSel2 = ", dut.op2Sel.toInt)
+      println("aluFun = ", dut.aluFun.toInt)
+      println("aluResult = ", dut.aluResult.toInt)
+      println("wbSel = ", dut.wbSel.toInt)
+      println("wa = ", dut.regFile.wa.toInt)
+      println("wd = ", dut.regFile.wd.toInt)
+      println("rfWen = ", dut.rfWen.toInt)
+
+      assert(dut.aluFun.toInt == 0)
+      assert(dut.wbSel.toInt == 0)
+      assert(dut.regFile.wa.toInt == 3)
+      assert(dut.regFile.wd.toInt == 42)
+      assert(dut.rfWen.toInt == 1)
 
       // TODO MORE BRANCH target tests required..
     }

@@ -237,7 +237,7 @@ class RegFile extends Component {
   val io = new Bundle {
     val instruction = in UInt(32 bits)
     val wd = in SInt(32 bits)
-    val en = in Bool
+    val en = in Bits(1 bits)
     val rs1 = out SInt(32 bits)
     val rs2 = out SInt(32 bits)
   }
@@ -270,7 +270,7 @@ class RegFile extends Component {
   }.otherwise {
     wd := io.wd
   }
-  regFile.write(wa, U(wd), io.en)
+  regFile.write(wa, U(wd), io.en.asBool)
 }
 
 class BranchCondGen extends Component {
@@ -436,7 +436,7 @@ class Decode extends Component {
     val op1Sel = out Bits (2 bits)
     val op2Sel = out Bits (3 bits)
     val wbSel = out Bits (3 bits)
-    val rfWen = out Bool
+    val rfWen = out Bits (1 bits)
     val memVal = out Bool
     val memRw = out Bool
   }
@@ -517,7 +517,7 @@ class Decode extends Component {
     io.op2Sel := op2Sel.asBits
     io.aluFun := aluFun.asBits
     io.wbSel := wbSel.asBits
-    io.rfWen := rfWen               // TODO Inhibit rfWen on stall or exception.
+    io.rfWen := rfWen.asBits               // TODO Inhibit rfWen on stall or exception.
     io.memVal := memEnable
     io.memRw := memWr
   }
@@ -727,7 +727,7 @@ class Sodor extends Component {
   val wbSel = Bits (3 bits)
   val memRw = Bool
   val memVal = Bool
-  val rfWen = Bool
+  val rfWen = out Bits (1 bits)
   val brEq = Bool
   val brLt = Bool
   val brLtu = Bool
