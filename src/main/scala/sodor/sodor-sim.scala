@@ -297,8 +297,14 @@ object SodorSim {
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
 
-      // Drive the dut inputs
-      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("0000000000100000000000010001000100011", 2) // sw
+      // Drive the dut inputs with addi 256 to reg 1
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00010000000000000000000010010011", 2) // addi
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Drive the dut inputs with sw reg 1 to memory[imm + reg2]
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000100000100000010001000100011", 2) // sw
 
       // Wait a rising edge on the clock
       dut.clockDomain.waitRisingEdge()
@@ -313,6 +319,9 @@ object SodorSim {
       println("memVal = ", dut.io.dataMemory.valid.toInt)
       println("addr = ", dut.io.dataMemory.addr.toInt)
       println("aluResult = ", dut.aluResult.toInt)
+      println("wdata = ", dut.io.dataMemory.wdata.toInt)
+      println("rs1 = ", dut.rs1.toInt)
+      println("rs2 = ", dut.rs2.toInt)
 
       assert(dut.op1Sel.toInt  == 0)
       assert(dut.op2Sel.toInt  == 1)
@@ -322,15 +331,8 @@ object SodorSim {
       assert(dut.io.dataMemory.valid.toInt == 1)
       assert(dut.io.dataMemory.addr.toInt == 68)
       assert(dut.aluResult.toInt == 68)
-
-      println("OK?")
-
-      println("wdata = ", dut.io.dataMemory.wdata.toInt)
-      println("rs1 = ", dut.rs1.toInt)
-      println("rs2 = ", dut.rs1.toInt)
-
-      assert(dut.rs2.toInt == 0)
-      assert(dut.io.dataMemory.wdata.toInt == 0)  // FIXME Should test with non-zero write data.
+      assert(dut.rs2.toInt == 256)
+      assert(dut.io.dataMemory.wdata.toInt == 256)
 
       // TODO More SW tests required.
     }
