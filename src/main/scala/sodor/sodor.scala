@@ -437,8 +437,8 @@ class Decode extends Component {
     val op2Sel = out Bits (3 bits)
     val wbSel = out Bits (3 bits)
     val rfWen = out Bits (1 bits)
-    val memVal = out Bool
-    val memRw = out Bool
+    val memVal = out Bits (1 bits)
+    val memRw = out Bits (1 bits)
   }
   val opCode = B(io.instruction(6 downto 0))
   val funct3 = B(io.instruction(14 downto 12))
@@ -518,8 +518,8 @@ class Decode extends Component {
     io.aluFun := aluFun.asBits
     io.wbSel := wbSel.asBits
     io.rfWen := rfWen.asBits               // TODO Inhibit rfWen on stall or exception.
-    io.memVal := memEnable
-    io.memRw := memWr
+    io.memVal := memEnable.asBits
+    io.memRw := memWr.asBits
   }
 
   // Assume instruction is invalid unless proven otherwise.
@@ -693,8 +693,8 @@ class Sodor extends Component {
       val addr = out SInt (32 bits)
       val wdata = out SInt(32 bits)
       val rdata = in SInt(32 bits)
-      val rw = out Bool
-      val valid = out Bool
+      val rw = out Bits(1 bits)
+      val valid = out Bits(1 bits)
     }
     val coprocessor = new Bundle {
       val csr = in SInt(32 bits)
@@ -725,8 +725,8 @@ class Sodor extends Component {
   val op2Sel = Bits (3 bits)
   val aluFun = Bits (4 bits)
   val wbSel = Bits (3 bits)
-  val memRw = Bool
-  val memVal = Bool
+  val memRw = out Bits (1 bits)
+  val memVal = out Bits (1 bits)
   val rfWen = out Bits (1 bits)
   val brEq = Bool
   val brLt = Bool

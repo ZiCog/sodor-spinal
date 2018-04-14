@@ -273,6 +273,8 @@ object SodorSim {
       println("wa = ", dut.regFile.wa.toInt)
       println("wd = ", dut.regFile.wd.toInt)
       println("rfWen = ", dut.rfWen.toInt)
+      println("rw = ", dut.io.dataMemory.rw.toInt)
+      println("val = ", dut.io.dataMemory.valid.toInt)
 
       assert(dut.rs1.toInt == 0)
       assert(dut.op1Sel.toInt  == 0)
@@ -284,8 +286,53 @@ object SodorSim {
       assert(dut.regFile.wa.toInt == 3)
       assert(dut.regFile.wd.toInt == 42)
       assert(dut.rfWen.toInt == 1)
+      assert(dut.io.dataMemory.rw.toInt == 0)
+      assert(dut.io.dataMemory.valid.toInt == 1)
 
       // TODO MORE BRANCH load tests required.
+    }
+
+    compiled.doSim("test_SW") { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Drive the dut inputs
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("0000000000100000000000010001000100011", 2) // sw
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      // Check that the dut values match with the reference model ones
+
+      println("opSel1 = ", dut.op1Sel.toInt)
+      println("opSel2 = ", dut.op2Sel.toInt)
+      println("aluFun = ", dut.aluFun.toInt)
+      println("rfWen = ", dut.rfWen.toInt)
+      println("memRw = ", dut.io.dataMemory.rw.toInt)
+      println("memVal = ", dut.io.dataMemory.valid.toInt)
+      println("addr = ", dut.io.dataMemory.addr.toInt)
+      println("aluResult = ", dut.aluResult.toInt)
+
+      assert(dut.op1Sel.toInt  == 0)
+      assert(dut.op2Sel.toInt  == 1)
+      assert(dut.aluFun.toInt == 0)
+      assert(dut.rfWen.toInt == 0)
+      assert(dut.io.dataMemory.rw.toInt == 1)
+      assert(dut.io.dataMemory.valid.toInt == 1)
+      assert(dut.io.dataMemory.addr.toInt == 68)
+      assert(dut.aluResult.toInt == 68)
+
+      println("OK?")
+
+      println("wdata = ", dut.io.dataMemory.wdata.toInt)
+      println("rs1 = ", dut.rs1.toInt)
+      println("rs2 = ", dut.rs1.toInt)
+
+      assert(dut.rs2.toInt == 0)
+      assert(dut.io.dataMemory.wdata.toInt == 0)  // FIXME Should test with non-zero write data.
+
+      // TODO More SW tests required.
     }
   }
 }
