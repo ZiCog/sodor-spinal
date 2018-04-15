@@ -168,7 +168,6 @@ class ProgramCounter extends Component {
     val pc4 = out SInt(32 bits)
   }
   val pc = Reg(SInt(32 bits)) init 0
-  val pc4 = SInt(32 bits)
   pc := io.pcNext
   io.pc := pc
   io.pc4 := pc + 4
