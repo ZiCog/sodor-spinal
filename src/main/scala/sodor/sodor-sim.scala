@@ -15,7 +15,7 @@ object SodorSim {
       dut.programCounter.io.pc.simPublic()
       dut.programCounter.io.pcNext.simPublic()
       dut.pc.simPublic()
-      dut.pc.simPublic()
+      dut.pcNext.simPublic()
       dut.jalr.simPublic()
       dut.branch.simPublic()
       dut.jump.simPublic()
@@ -26,6 +26,7 @@ object SodorSim {
       dut.rs2.simPublic()
       dut.op1Sel.simPublic()
       dut.op2Sel.simPublic()
+      dut.pcSel.simPublic()
       dut.wbSel.simPublic()
       dut.aluFun.simPublic()
       dut.aluResult.simPublic()
@@ -506,6 +507,7 @@ object SodorSim {
       println("memVal = ", dut.io.dataMemory.valid.toInt)
       println("addr = ", dut.io.dataMemory.addr.toInt)
       println("jump = ", dut.jump.toInt)
+      println("pcNext = ", dut.pcNext.toInt)
       println("wd = ", dut.regFile.wd.toInt)
       println("wa = ", dut.regFile.wa.toInt)
       println("rs1 = ", dut.rs1.toInt)
@@ -519,6 +521,7 @@ object SodorSim {
       assert(dut.io.dataMemory.rw.toInt == 0)
       assert(dut.io.dataMemory.valid.toInt == 0)
       assert(dut.jump.toInt == 4112)
+      assert(dut.pcNext.toInt == 4112)
       assert(dut.regFile.wd.toInt == 20)
       assert(dut.regFile.wa.toInt == 1)
 /*
@@ -551,6 +554,92 @@ object SodorSim {
       assert(dut.io.dataMemory.wdata.toInt == 4112)
 */
     }
+
+    compiled.doSim("test_JALR") { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Bump the PC up a bit by driving a few NOPs in
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000000000000010011", 2)  // NOP (ADDI)
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+      dut.clockDomain.waitRisingEdge()
+
+      // Drive the dut inputs with addi 256 to reg 1
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00010000000000000000000010010011", 2) // addi
+
+      dut.clockDomain.waitRisingEdge()
+      println("pc = ", dut.pc.toInt)
+      assert(dut.pc.toInt  == 12)
+
+      // Drive the dut inputs with JALR R1
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00001000000100001000000011100111", 2) // addi
+
+      // Wait a rising edge on the clock
+      dut.clockDomain.waitRisingEdge()
+
+      println("JALR signals:")
+      println("pc = ", dut.pc.toInt)
+      println("opSel1 = ", dut.op1Sel.toInt)
+      println("opSel2 = ", dut.op2Sel.toInt)
+      println("aluFun = ", dut.aluFun.toInt)
+      println("rfWen = ", dut.rfWen.toInt)
+      println("memRw = ", dut.io.dataMemory.rw.toInt)
+      println("memVal = ", dut.io.dataMemory.valid.toInt)
+      println("addr = ", dut.io.dataMemory.addr.toInt)
+      println("jalr = ", dut.jalr.toInt)
+      println("pcSel = ", dut.pcSel.toInt)
+      println("pcNext = ", dut.pcNext.toInt)
+      println("wd = ", dut.regFile.wd.toInt)
+      println("wa = ", dut.regFile.wa.toInt)
+      println("rs1 = ", dut.rs1.toInt)
+      println("rs2 = ", dut.rs2.toInt)
+
+      // FIXME, should load RS1 and immediate with some non-zero value.
+
+      assert(dut.pc.toInt  == 16)
+      assert(dut.op1Sel.toInt  == 3)
+      assert(dut.op2Sel.toInt  == 4)
+      assert(dut.aluFun.toInt == 11)
+      assert(dut.rfWen.toInt == 1)
+      assert(dut.io.dataMemory.rw.toInt == 0)
+      assert(dut.io.dataMemory.valid.toInt == 0)
+      assert(dut.jalr.toInt == 384)
+      assert(dut.pcNext.toInt == 384)
+      assert(dut.regFile.wd.toInt == 20)
+      assert(dut.regFile.wa.toInt == 1)
+      /*
+            // Drive the dut inputs with sw reg 1 to memory[imm + reg2]
+            dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000100000100000010001000100011", 2) // sw
+
+            // Wait a rising edge on the clock
+            dut.clockDomain.waitRisingEdge()
+
+            // Check that the dut values match with the reference model ones
+            println("SW signals:")
+            println("opSel1 = ", dut.op1Sel.toInt)
+            println("opSel2 = ", dut.op2Sel.toInt)
+            println("aluFun = ", dut.aluFun.toInt)
+            println("rfWen = ", dut.rfWen.toInt)
+            println("memRw = ", dut.io.dataMemory.rw.toInt)
+            println("memVal = ", dut.io.dataMemory.valid.toInt)
+            println("addr = ", dut.io.dataMemory.addr.toInt)
+            println("aluResult = ", dut.aluResult.toInt)
+            println("wdata = ", dut.io.dataMemory.wdata.toInt)
+
+            assert(dut.op1Sel.toInt  == 0)
+            assert(dut.op2Sel.toInt  == 1)
+            assert(dut.aluFun.toInt == 0)
+            assert(dut.rfWen.toInt == 0)
+            assert(dut.io.dataMemory.rw.toInt == 1)
+            assert(dut.io.dataMemory.valid.toInt == 1)
+            assert(dut.io.dataMemory.addr.toInt == 68)
+            assert(dut.aluResult.toInt == 68)
+            assert(dut.io.dataMemory.wdata.toInt == 4112)
+      */
+    }
+
   }
 }
 

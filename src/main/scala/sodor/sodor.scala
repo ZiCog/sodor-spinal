@@ -481,7 +481,7 @@ class Decode extends Component {
     "SRL"     -> (True , BR.N   , OP1.RS1 , OP2.RS2 , ALU.SRL   , WB.ALU , True  , False , False , MT.X  , CSR.N),
 
     "JAL"     -> (True , BR.J   , OP1.X   , OP2.X   , ALU.X     , WB.PC4 , True  , False , False , MT.X  , CSR.N),
-    "JALR"    -> (True , BR.JR  , OP1.RS1 , OP2.IMI , ALU.X     , WB.PC4 , True  , False , False , MT.X  , CSR.N),
+    "JALR"    -> (True , BR.JR  , OP1.X   , OP2.X   , ALU.X     , WB.PC4 , True  , False , False , MT.X  , CSR.N),
     "BEQ"     -> (True , BR.EQ  , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
     "BNE"     -> (True , BR.NE  , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
     "BGE"     -> (True , BR.GE  , OP1.X   , OP2.X   , ALU.X     , WB.X   , False , False , False , MT.X  , CSR.N),
