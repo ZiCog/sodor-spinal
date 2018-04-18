@@ -276,19 +276,19 @@ class BranchCondGen extends Component {
   val io = new Bundle {
     val rs1 = in SInt(32 bits)
     val rs2 = in SInt(32 bits)
-    val brEq = out Bool
-    val brLt = out Bool
-    val brLtu = out Bool
+    val brEq = out Bits (1 bits)
+    val brLt = out Bits (1 bits)
+    val brLtu = out Bits (1 bits)
   }
-  io.brEq := False
-  io.brLt := False
-  io.brLtu := False
+  io.brEq := False.asBits
+  io.brLt := False.asBits
+  io.brLtu := False.asBits
   when (io.rs1 === io.rs2) {
-    io.brEq := True
+    io.brEq := True.asBits
   }.elsewhen (io.rs1 < io.rs2) {
-    io.brLt := True
+    io.brLt := True.asBits
   }.elsewhen (U(io.rs1) < U(io.rs2)) {
-    io.brLtu := True
+    io.brLtu := True.asBits
   }
 }
 
@@ -427,9 +427,9 @@ class Decode extends Component {
   // Decode RISC V instructions (The Hard Way!)
   val io = new Bundle {
     val instruction = in UInt(32 bits)
-    val brEq = in Bool
-    val brLt = in Bool
-    val brLtu = in Bool
+    val brEq = in Bits (1 bits)
+    val brLt = in Bits (1 bits)
+    val brLtu = in Bits (1 bits)
     val pcSel = out Bits (3 bits)
     val aluFun = out Bits (4 bits)
     val op1Sel = out Bits (2 bits)
@@ -665,12 +665,12 @@ class Decode extends Component {
 
   // Branch logic
   io.pcSel := pcSelections.pc4.asBits
-  when (((branchType_ === BR.EQ)  && (io.brEq  === True)) ||
-         (branchType_ === BR.NE)  && (io.brEq  === False) ||
-         (branchType_ === BR.LT)  && (io.brLt  === True)  ||
-         (branchType_ === BR.LTU) && (io.brLtu === True)  ||
-         (branchType_ === BR.GE)  && (io.brLt  === False) ||
-         (branchType_ === BR.GEU) && (io.brLtu === False))
+  when (((branchType_ === BR.EQ)  && (io.brEq  === True.asBits) ||
+         (branchType_ === BR.NE)  && (io.brEq  === False.asBits) ||
+         (branchType_ === BR.LT)  && (io.brLt  === True.asBits)  ||
+         (branchType_ === BR.LTU) && (io.brLtu === True.asBits)  ||
+         (branchType_ === BR.GE)  && (io.brLt  === False.asBits) ||
+         (branchType_ === BR.GEU) && (io.brLtu === False.asBits)))
   {
     io.pcSel := pcSelections.branch.asBits
   }.elsewhen((branchType_ === BR.J)) {
@@ -727,9 +727,9 @@ class Sodor extends Component {
   val memRw = out Bits (1 bits)
   val memVal = out Bits (1 bits)
   val rfWen = out Bits (1 bits)
-  val brEq = Bool
-  val brLt = Bool
-  val brLtu = Bool
+  val brEq = out Bits (1 bits)
+  val brLt = out Bits (1 bits)
+  val brLtu = out Bits (1 bits)
 
   val pcMux = new PcMux
   pcMux.io.pc4 := pc4

@@ -16,6 +16,7 @@ object SodorSim {
       dut.programCounter.io.pcNext.simPublic()
       dut.pc.simPublic()
       dut.pcNext.simPublic()
+      dut.pc4.simPublic()
       dut.jalr.simPublic()
       dut.branch.simPublic()
       dut.jump.simPublic()
@@ -34,6 +35,9 @@ object SodorSim {
       dut.regFile.wd.simPublic()
       dut.regFile.wa.simPublic()
       dut.rfWen.simPublic()
+      dut.brEq.simPublic()
+      dut.brLt.simPublic()
+      dut.brLtu.simPublic()
       dut.io.dataMemory.addr.simPublic()
       dut
     }
@@ -596,8 +600,6 @@ object SodorSim {
       println("rs1 = ", dut.rs1.toInt)
       println("rs2 = ", dut.rs2.toInt)
 
-      // FIXME, should load RS1 and immediate with some non-zero value.
-
       assert(dut.pc.toInt  == 16)
       assert(dut.op1Sel.toInt  == 3)
       assert(dut.op2Sel.toInt  == 4)
@@ -640,6 +642,29 @@ object SodorSim {
       */
     }
 
+    compiled.doSim("test_BranchCondGen") { dut =>
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      // Drive the dut inputs with addi 256 to reg 1
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00010000000000000000000010010011", 2) // addi
+      dut.clockDomain.waitRisingEdge()
+
+      // Drive the dut inputs with addi 256 to reg 2
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00110000000000000000000100010011", 2) // addi
+      dut.clockDomain.waitRisingEdge()
+
+      // Drive branch instructions...
+
+      println("brEqu = ", dut.brEq.toInt)
+      println("brLt = ", dut.brLt.toInt)
+      println("brLtu = ", dut.brLtu.toInt)
+      println("jump = ", dut.jump.toInt)
+      println("jalr = ", dut.jalr.toInt)
+      println("branch = ", dut.branch.toInt)
+      println("pc4 = ", dut.pc4.toInt)
+    }
   }
 }
 
