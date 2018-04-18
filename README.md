@@ -22,6 +22,9 @@ This is my first ever non-trivial SpinalHDL design and my first ever attempt at 
 
 ### Status
 
+2018-04-18 : Data and control paths completed. All instructions in place except FENCE, ECALL, EBREAK and the CS register stuff.
+             Almost all control and data paths checked out with a test harness "sodor-sim.scala". 
+
 2018-04-08 : Incomplete. Just started. The result of a long Easter weekend hacking session. Not tested in any way.
              It does at least generate Verilog and that Verilog passes through Yosys without error.
 
