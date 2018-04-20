@@ -179,7 +179,7 @@ class JumpRegTargetGen extends Component {
     val rs1 = in SInt (32 bits)
     val jalr = out SInt (32 bits)
   }
-  io.jalr := (io.iTypeImmediate + io.rs1) & ~1
+  io.jalr := S((io.iTypeImmediate + io.rs1)(31 downto 1) ## B"0")
 }
 
 class BranchTargetGen extends Component {
