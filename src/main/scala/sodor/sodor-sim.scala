@@ -80,7 +80,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("uType = ", dut.uTypeImmediate.toInt)
       assert(dut.uTypeImmediate.toInt == 0)
 
       // Drive the dut inputs
@@ -90,7 +89,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("uType = ", dut.uTypeImmediate.toInt)
       assert(dut.uTypeImmediate.toInt == -4096)
     }
 
@@ -106,7 +104,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("iType = ", dut.iTypeImmediate.toInt)
       assert(dut.iTypeImmediate.toInt == 0)
 
       // Drive the dut inputs
@@ -116,7 +113,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("iType = ", dut.iTypeImmediate.toInt)
       assert(dut.iTypeImmediate.toInt == -1)
     }
 
@@ -132,7 +128,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("iType = ", dut.sTypeImmediate.toInt)
       assert(dut.sTypeImmediate.toInt == 0)
 
       // Drive the dut inputs
@@ -142,7 +137,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("sType = ", dut.sTypeImmediate.toInt)
       assert(dut.sTypeImmediate.toInt == -1)
     }
 
@@ -159,8 +153,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("pc = ", dut.programCounter.io.pc.toInt)
-      println("jump = ", dut.jump.toInt)
       assert(dut.pc.toInt == 0)
       assert(dut.jump.toInt == 0)
 
@@ -178,8 +170,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("pc = ", dut.programCounter.io.pc.toInt)
-      println("jump = ", dut.jump.toInt)
       assert(dut.pc.toInt == 32)
       assert(dut.jump.toInt == 30)
 
@@ -199,8 +189,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("pc = ", dut.programCounter.io.pc.toInt)
-      println("branch = ", dut.branch.toInt)
       assert(dut.pc.toInt == 0)
       assert(dut.branch.toInt == 0)
 
@@ -218,8 +206,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("pc = ", dut.programCounter.io.pc.toInt)
-      println("branch = ", dut.branch.toInt)
       assert(dut.pc.toInt == 32)
       assert(dut.branch.toInt == 30)
 
@@ -238,8 +224,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("rs1 = ", dut.rs1.toInt)
-      println("jalr = ", dut.jalr.toInt)
       assert(dut.rs1.toInt == 0)
       assert(dut.jalr.toInt == 0)
 
@@ -270,19 +254,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("rs1 = ", dut.rs1.toInt)
-      println("opSel1 = ", dut.op1Sel.toInt)
-      println("opSel2 = ", dut.op2Sel.toInt)
-      println("aluFun = ", dut.aluFun.toInt)
-      println("aluResult = ", dut.aluResult.toInt)
-      println("dataMemory.addr = ", dut.io.dataMemory.addr.toInt)
-      println("wbSel = ", dut.wbSel.toInt)
-      println("wa = ", dut.regFile.wa.toInt)
-      println("wd = ", dut.regFile.wd.toInt)
-      println("rfWen = ", dut.rfWen.toInt)
-      println("rw = ", dut.io.dataMemory.rw.toInt)
-      println("val = ", dut.io.dataMemory.valid.toInt)
-
       assert(dut.rs1.toInt == 0)
       assert(dut.op1Sel.toInt  == 0)
       assert(dut.op2Sel.toInt  == 0)
@@ -317,19 +288,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-
-      println("opSel1 = ", dut.op1Sel.toInt)
-      println("opSel2 = ", dut.op2Sel.toInt)
-      println("aluFun = ", dut.aluFun.toInt)
-      println("rfWen = ", dut.rfWen.toInt)
-      println("memRw = ", dut.io.dataMemory.rw.toInt)
-      println("memVal = ", dut.io.dataMemory.valid.toInt)
-      println("addr = ", dut.io.dataMemory.addr.toInt)
-      println("aluResult = ", dut.aluResult.toInt)
-      println("wdata = ", dut.io.dataMemory.wdata.toInt)
-      println("rs1 = ", dut.rs1.toInt)
-      println("rs2 = ", dut.rs2.toInt)
-
       assert(dut.op1Sel.toInt  == 0)
       assert(dut.op2Sel.toInt  == 1)
       assert(dut.aluFun.toInt == 0)
@@ -355,20 +313,6 @@ object SodorSim {
       // Wait a rising edge on the clock
       dut.clockDomain.waitRisingEdge()
 
-      println("LUI signals:")
-      println("opSel1 = ", dut.op1Sel.toInt)
-      println("opSel2 = ", dut.op2Sel.toInt)
-      println("aluFun = ", dut.aluFun.toInt)
-      println("rfWen = ", dut.rfWen.toInt)
-      println("memRw = ", dut.io.dataMemory.rw.toInt)
-      println("memVal = ", dut.io.dataMemory.valid.toInt)
-      println("addr = ", dut.io.dataMemory.addr.toInt)
-      println("aluResult = ", dut.aluResult.toInt)
-      println("wd = ", dut.regFile.wd.toInt)
-      println("wa = ", dut.regFile.wa.toInt)
-      println("rs1 = ", dut.rs1.toInt)
-      println("rs2 = ", dut.rs2.toInt)
-
       assert(dut.op1Sel.toInt  == 1)
       assert(dut.op2Sel.toInt  == 4)
       assert(dut.aluFun.toInt == 10)
@@ -386,17 +330,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("SW signals:")
-      println("opSel1 = ", dut.op1Sel.toInt)
-      println("opSel2 = ", dut.op2Sel.toInt)
-      println("aluFun = ", dut.aluFun.toInt)
-      println("rfWen = ", dut.rfWen.toInt)
-      println("memRw = ", dut.io.dataMemory.rw.toInt)
-      println("memVal = ", dut.io.dataMemory.valid.toInt)
-      println("addr = ", dut.io.dataMemory.addr.toInt)
-      println("aluResult = ", dut.aluResult.toInt)
-      println("wdata = ", dut.io.dataMemory.wdata.toInt)
-
       assert(dut.op1Sel.toInt  == 0)
       assert(dut.op2Sel.toInt  == 1)
       assert(dut.aluFun.toInt == 0)
@@ -425,22 +358,6 @@ object SodorSim {
 
       // Wait a rising edge on the clock
       dut.clockDomain.waitRisingEdge()
-
-      println("AUIPC signals:")
-      println("pc = ", dut.pc.toInt)
-      println("opSel1 = ", dut.op1Sel.toInt)
-      println("opSel2 = ", dut.op2Sel.toInt)
-      println("aluFun = ", dut.aluFun.toInt)
-      println("rfWen = ", dut.rfWen.toInt)
-      println("memRw = ", dut.io.dataMemory.rw.toInt)
-      println("memVal = ", dut.io.dataMemory.valid.toInt)
-      println("addr = ", dut.io.dataMemory.addr.toInt)
-      println("aluResult = ", dut.aluResult.toInt)
-      println("wd = ", dut.regFile.wd.toInt)
-      println("wa = ", dut.regFile.wa.toInt)
-      println("rs1 = ", dut.rs1.toInt)
-      println("rs2 = ", dut.rs2.toInt)
-
       assert(dut.pc.toInt  == 16)
       assert(dut.op1Sel.toInt  == 1)
       assert(dut.op2Sel.toInt  == 2)
@@ -459,17 +376,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      println("SW signals:")
-      println("opSel1 = ", dut.op1Sel.toInt)
-      println("opSel2 = ", dut.op2Sel.toInt)
-      println("aluFun = ", dut.aluFun.toInt)
-      println("rfWen = ", dut.rfWen.toInt)
-      println("memRw = ", dut.io.dataMemory.rw.toInt)
-      println("memVal = ", dut.io.dataMemory.valid.toInt)
-      println("addr = ", dut.io.dataMemory.addr.toInt)
-      println("aluResult = ", dut.aluResult.toInt)
-      println("wdata = ", dut.io.dataMemory.wdata.toInt)
-
       assert(dut.op1Sel.toInt  == 0)
       assert(dut.op2Sel.toInt  == 1)
       assert(dut.aluFun.toInt == 0)
@@ -492,7 +398,6 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
       dut.clockDomain.waitRisingEdge()
       dut.clockDomain.waitRisingEdge()
-      println("pc = ", dut.pc.toInt)
       assert(dut.pc.toInt  == 12)
 
       // Drive the dut inputs with JAL R1, 4096
@@ -500,22 +405,6 @@ object SodorSim {
 
       // Wait a rising edge on the clock
       dut.clockDomain.waitRisingEdge()
-
-      println("JAL signals:")
-      println("pc = ", dut.pc.toInt)
-      println("opSel1 = ", dut.op1Sel.toInt)
-      println("opSel2 = ", dut.op2Sel.toInt)
-      println("aluFun = ", dut.aluFun.toInt)
-      println("rfWen = ", dut.rfWen.toInt)
-      println("memRw = ", dut.io.dataMemory.rw.toInt)
-      println("memVal = ", dut.io.dataMemory.valid.toInt)
-      println("addr = ", dut.io.dataMemory.addr.toInt)
-      println("jump = ", dut.jump.toInt)
-      println("pcNext = ", dut.pcNext.toInt)
-      println("wd = ", dut.regFile.wd.toInt)
-      println("wa = ", dut.regFile.wa.toInt)
-      println("rs1 = ", dut.rs1.toInt)
-      println("rs2 = ", dut.rs2.toInt)
 
       assert(dut.pc.toInt  == 16)
       assert(dut.op1Sel.toInt  == 3)
@@ -574,7 +463,6 @@ object SodorSim {
       dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00010000000000000000000010010011", 2) // addi
 
       dut.clockDomain.waitRisingEdge()
-      println("pc = ", dut.pc.toInt)
       assert(dut.pc.toInt  == 12)
 
       // Drive the dut inputs with JALR R1
@@ -582,23 +470,6 @@ object SodorSim {
 
       // Wait a rising edge on the clock
       dut.clockDomain.waitRisingEdge()
-
-      println("JALR signals:")
-      println("pc = ", dut.pc.toInt)
-      println("opSel1 = ", dut.op1Sel.toInt)
-      println("opSel2 = ", dut.op2Sel.toInt)
-      println("aluFun = ", dut.aluFun.toInt)
-      println("rfWen = ", dut.rfWen.toInt)
-      println("memRw = ", dut.io.dataMemory.rw.toInt)
-      println("memVal = ", dut.io.dataMemory.valid.toInt)
-      println("addr = ", dut.io.dataMemory.addr.toInt)
-      println("jalr = ", dut.jalr.toInt)
-      println("pcSel = ", dut.pcSel.toInt)
-      println("pcNext = ", dut.pcNext.toInt)
-      println("wd = ", dut.regFile.wd.toInt)
-      println("wa = ", dut.regFile.wa.toInt)
-      println("rs1 = ", dut.rs1.toInt)
-      println("rs2 = ", dut.rs2.toInt)
 
       assert(dut.pc.toInt  == 16)
       assert(dut.op1Sel.toInt  == 3)
@@ -659,12 +530,6 @@ object SodorSim {
       dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000001000001000000001100011", 2) // addi
       dut.clockDomain.waitRisingEdge()
 
-      println("rs1 = ", dut.rs1.toInt)
-      println("rs2 = ", dut.rs2.toInt)
-      println("brEqu = ", dut.brEq.toInt)
-      println("brLt = ", dut.brLt.toInt)
-      println("brLtu = ", dut.brLtu.toInt)
-
       assert(dut.rs1.toInt == 256)
       assert(dut.rs2.toInt == 256)
       assert(dut.brEq.toInt == 1)
@@ -676,12 +541,6 @@ object SodorSim {
       // Drive branch instructions...BEQ
       dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000001000001000000001100011", 2) // addi
       dut.clockDomain.waitRisingEdge()
-
-      println("rs1 = ", dut.rs1.toInt)
-      println("rs2 = ", dut.rs2.toInt)
-      println("brEqu = ", dut.brEq.toInt)
-      println("brLt = ", dut.brLt.toInt)
-      println("brLtu = ", dut.brLtu.toInt)
 
       assert(dut.rs1.toInt == 256)
       assert(dut.rs2.toInt == 256)
