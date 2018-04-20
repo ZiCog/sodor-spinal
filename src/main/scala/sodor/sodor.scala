@@ -724,12 +724,12 @@ class Sodor extends Component {
   val op2Sel = Bits (3 bits)
   val aluFun = Bits (4 bits)
   val wbSel = Bits (3 bits)
-  val memRw = out Bits (1 bits)
-  val memVal = out Bits (1 bits)
-  val rfWen = out Bits (1 bits)
-  val brEq = out Bits (1 bits)
-  val brLt = out Bits (1 bits)
-  val brLtu = out Bits (1 bits)
+  val memRw = Bits (1 bits)
+  val memVal = Bits (1 bits)
+  val rfWen = Bits (1 bits)
+  val brEq = Bits (1 bits)
+  val brLt = Bits (1 bits)
+  val brLtu = Bits (1 bits)
 
   val pcMux = new PcMux
   pcMux.io.pc4 := pc4
