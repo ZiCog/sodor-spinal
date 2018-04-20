@@ -652,18 +652,41 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Drive the dut inputs with addi 256 to reg 2
-      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00110000000000000000000100010011", 2) // addi
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00010000000000000000000100010011", 2) // addi
       dut.clockDomain.waitRisingEdge()
 
-      // Drive branch instructions...
+      // Drive branch instructions...BEQ
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000001000001000000001100011", 2) // addi
+      dut.clockDomain.waitRisingEdge()
 
+      println("rs1 = ", dut.rs1.toInt)
+      println("rs2 = ", dut.rs2.toInt)
       println("brEqu = ", dut.brEq.toInt)
       println("brLt = ", dut.brLt.toInt)
       println("brLtu = ", dut.brLtu.toInt)
-      println("jump = ", dut.jump.toInt)
-      println("jalr = ", dut.jalr.toInt)
-      println("branch = ", dut.branch.toInt)
-      println("pc4 = ", dut.pc4.toInt)
+
+      assert(dut.rs1.toInt == 256)
+      assert(dut.rs2.toInt == 256)
+      assert(dut.brEq.toInt == 1)
+
+      // Drive the dut inputs with addi 257 to reg 2
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00010000000100000000000100010011", 2) // addi
+      dut.clockDomain.waitRisingEdge()
+
+      // Drive branch instructions...BEQ
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000001000001000000001100011", 2) // addi
+      dut.clockDomain.waitRisingEdge()
+
+      println("rs1 = ", dut.rs1.toInt)
+      println("rs2 = ", dut.rs2.toInt)
+      println("brEqu = ", dut.brEq.toInt)
+      println("brLt = ", dut.brLt.toInt)
+      println("brLtu = ", dut.brLtu.toInt)
+
+      assert(dut.rs1.toInt == 256)
+      assert(dut.rs2.toInt == 256)
+      assert(dut.brEq.toInt == 1)
+
     }
   }
 }
