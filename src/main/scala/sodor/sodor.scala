@@ -98,34 +98,17 @@ object storeFunct3 extends SpinalEnum {
   )
 }
 
-object opImmFunct3x extends SpinalEnum {
-  val addi, slti, sltiu, xori, ori, andi, slli, srli, srai = newElement()
+object opFunct3 extends SpinalEnum {
+  val add, sll, slt, sltu, xor, srl, or, and = newElement()
   defaultEncoding = SpinalEnumEncoding("staticEncoding")(
-    addi  -> Integer.parseInt("0000", 2),
-    slti  -> Integer.parseInt("0010", 2),
-    sltiu -> Integer.parseInt("0011", 2),
-    xori  -> Integer.parseInt("0100", 2),
-    ori   -> Integer.parseInt("0110", 2),
-    andi  -> Integer.parseInt("0111", 2),
-    slli  -> Integer.parseInt("0001", 2),
-    srli  -> Integer.parseInt("0101", 2),
-    srai  -> Integer.parseInt("1101", 2)
-  )
-}
-
-object opFunct3x extends SpinalEnum {
-  val add, sub, sll, slt, sltu, xor, srl, sra, or, and = newElement()
-  defaultEncoding = SpinalEnumEncoding("staticEncoding")(
-    add  -> Integer.parseInt("0000", 2),
-    sub  -> Integer.parseInt("1000", 2),
-    sll  -> Integer.parseInt("0001", 2),
-    slt  -> Integer.parseInt("0010", 2),
-    sltu -> Integer.parseInt("0011", 2),
-    xor  -> Integer.parseInt("0100", 2),
-    srl  -> Integer.parseInt("0101", 2),
-    sra  -> Integer.parseInt("1101", 2),
-    or   -> Integer.parseInt("0110", 2),
-    and  -> Integer.parseInt("0111", 2)
+    add  -> Integer.parseInt("000", 2),
+    sll  -> Integer.parseInt("001", 2),
+    slt  -> Integer.parseInt("010", 2),
+    sltu -> Integer.parseInt("011", 2),
+    xor  -> Integer.parseInt("100", 2),
+    srl  -> Integer.parseInt("101", 2),
+    or   -> Integer.parseInt("110", 2),
+    and  -> Integer.parseInt("111", 2)
   )
 }
 
@@ -441,7 +424,6 @@ class Decode extends Component {
   }
   val opCode = B(io.instruction(6 downto 0))
   val funct3 = B(io.instruction(14 downto 12))
-  val funct3x = B(io.instruction(31)) ## B(io.instruction(14 downto 12))
 
   val controlSignals = Map (
               //  val   | BR    | op1     | op2     | ALU       | wb     | rf    | mem   | mem   | mask  | csr   |
@@ -593,66 +575,69 @@ class Decode extends Component {
       }
     }
     is(opCodeSelections.opImm.asBits) {
-      switch(funct3x) {
-        is (opImmFunct3x.addi.asBits) {
+      switch(funct3) {
+        is (opFunct3.add.asBits) {
           lookupControlSignals("ADDI")
         }
-        is (opImmFunct3x.slti.asBits) {
+        is (opFunct3.slt.asBits) {
           lookupControlSignals("SLTI")
         }
-        is (opImmFunct3x.sltiu.asBits) {
+        is (opFunct3.sltu.asBits) {
           lookupControlSignals("SLTIU")
         }
-        is (opImmFunct3x.xori.asBits) {
+        is (opFunct3.xor.asBits) {
           lookupControlSignals("XORI")
         }
-        is (opImmFunct3x.ori.asBits) {
+        is (opFunct3.or.asBits) {
           lookupControlSignals("ORI")
         }
-        is (opImmFunct3x.andi.asBits) {
+        is (opFunct3.and.asBits) {
           lookupControlSignals("ANDI")
         }
-        is (opImmFunct3x.slli.asBits) {
+        is (opFunct3.sll.asBits) {
           lookupControlSignals("SLLI")
         }
-        is (opImmFunct3x.srli.asBits) {
-          lookupControlSignals("SRLI")
-        }
-        is (opImmFunct3x.srai.asBits) {
-          lookupControlSignals("SRAI")
+        is (opFunct3.srl.asBits) {
+          when (io.instruction(30)) {
+            lookupControlSignals("SRAI")
+          } otherwise {
+            lookupControlSignals("SRLI")
+          }
         }
       }
     }
     is(opCodeSelections.op.asBits) {
-      switch(funct3x) {
-        is (opFunct3x.add.asBits) {
-          lookupControlSignals("ADD")
+      switch(funct3) {
+        is (opFunct3.add.asBits) {
+          when (io.instruction(30)) {
+            lookupControlSignals("SUB")
+          } otherwise {
+            lookupControlSignals("ADD")
+          }
         }
-        is (opFunct3x.sub.asBits) {
-          lookupControlSignals("SUB")
-        }
-        is (opFunct3x.sll.asBits) {
+        is (opFunct3.sll.asBits) {
           lookupControlSignals("SLL")
         }
-        is (opFunct3x.slt.asBits) {
+        is (opFunct3.slt.asBits) {
           lookupControlSignals("SLT")
         }
-        is (opFunct3x.sltu.asBits) {
+        is (opFunct3.sltu.asBits) {
           lookupControlSignals("SLTU")
         }
-        is (opFunct3x.xor.asBits) {
+        is (opFunct3.xor.asBits) {
           lookupControlSignals("XOR")
         }
-        is (opFunct3x.srl.asBits) {
-          lookupControlSignals("SRL")
+        is (opFunct3.srl.asBits) {
+          when (io.instruction(30)) {
+            lookupControlSignals("SRL")
+          } otherwise {
+            lookupControlSignals("SRA")
+          }
         }
-        is (opFunct3x.sra.asBits) {
-          lookupControlSignals("SRA")
-        }
-        is (opFunct3x.or.asBits) {
+        is (opFunct3.or.asBits) {
           lookupControlSignals("OR")
         }
-        is (opFunct3x.and.asBits) {
+        is (opFunct3.and.asBits) {
           lookupControlSignals("AND")
         }
       }
@@ -665,12 +650,12 @@ class Decode extends Component {
 
   // Branch logic
   io.pcSel := pcSelections.pc4.asBits
-  when (((branchType_ === BR.EQ)  && (io.brEq  === True.asBits) ||
-         (branchType_ === BR.NE)  && (io.brEq  === False.asBits) ||
-         (branchType_ === BR.LT)  && (io.brLt  === True.asBits)  ||
-         (branchType_ === BR.LTU) && (io.brLtu === True.asBits)  ||
-         (branchType_ === BR.GE)  && (io.brLt  === False.asBits) ||
-         (branchType_ === BR.GEU) && (io.brLtu === False.asBits)))
+  when ((branchType_ === BR.EQ)  && (io.brEq  === True.asBits)  ||
+        (branchType_ === BR.NE)  && (io.brEq  === False.asBits) ||
+        (branchType_ === BR.LT)  && (io.brLt  === True.asBits)  ||
+        (branchType_ === BR.LTU) && (io.brLtu === True.asBits)  ||
+        (branchType_ === BR.GE)  && (io.brLt  === False.asBits) ||
+        (branchType_ === BR.GEU) && (io.brLtu === False.asBits))
   {
     io.pcSel := pcSelections.branch.asBits
   }.elsewhen((branchType_ === BR.J)) {
