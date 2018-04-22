@@ -1,5 +1,6 @@
 package Sodor
 
+import Array._
 import spinal.core._
 import spinal.sim._
 import spinal.core.sim._
@@ -513,6 +514,103 @@ object SodorSim {
       */
     }
 
+    compiled.doSim("test_RegFile") { dut =>
+      val instructionsLoad = Array (
+        ("06400013", "addi    x0,x0,100"),
+        ("06500093", "addi    x1,x0,101"),
+        ("06600113", "addi    x2,x0,102"),
+        ("06700193", "addi    x3,x0,103"),
+        ("06800213", "addi    x4,x0,104"),
+        ("06900293", "addi    x5,x0,105"),
+        ("06a00313", "addi    x6,x0,106"),
+        ("06b00393", "addi    x7,x0,107"),
+        ("06c00413", "addi    x8,x0,108"),
+        ("06d00493", "addi    x9,x0,109"),
+        ("06e00513", "addi    x10,x0,110"),
+        ("06f00593", "addi    x11,x0,111"),
+        ("07000613", "addi    x12,x0,112"),
+        ("07100693", "addi    x13,x0,113"),
+        ("07200713", "addi    x14,x0,114"),
+        ("07300793", "addi    x15,x0,115"),
+        ("07400813", "addi    x16,x0,116"),
+        ("07500893", "addi    x17,x0,117"),
+        ("07600913", "addi    x18,x0,118"),
+        ("07700993", "addi    x19,x0,119"),
+        ("07800a13", "addi    x20,x0,120"),
+        ("07900a93", "addi    x21,x0,121"),
+        ("07a00b13", "addi    x22,x0,122"),
+        ("07b00b93", "addi    x23,x0,123"),
+        ("07c00c13", "addi    x24,x0,124"),
+        ("07d00c93", "addi    x25,x0,125"),
+        ("07e00d13", "addi    x26,x0,126"),
+        ("07f00d93", "addi    x27,x0,127"),
+        ("08000e13", "addi    x28,x0,128"),
+        ("08100e93", "addi    x29,x0,129"),
+        ("08200f13", "addi    x30,x0,130"),
+        ("08300f93", "addi    x31,x0,131")
+      )
+      val instructionsStore = Array (
+        ("00002023", "sw      x0,0(x0)"),
+        ("00102023", "sw      x1,0(x0)"),
+        ("00202023", "sw      x2,0(x0)"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("00402023", "sw      x4,0(x0)"),
+        ("00502023", "sw      x5,0(x0)"),
+        ("00602023", "sw      x6,0(x0)"),
+        ("00702023", "sw      x7,0(x0)"),
+        ("00802023", "sw      x8,0(x0)"),
+        ("00902023", "sw      x9,0(x0)"),
+        ("00a02023", "sw      x10,0(x0)"),
+        ("00b02023", "sw      x11,0(x0)"),
+        ("00c02023", "sw      x12,0(x0)"),
+        ("00d02023", "sw      x13,0(x0)"),
+        ("00e02023", "sw      x14,0(x0)"),
+        ("00f02023", "sw      x15,0(x0)"),
+        ("01002023", "sw      x16,0(x0)"),
+        ("01102023", "sw      x17,0(x0)"),
+        ("01202023", "sw      x18,0(x0)"),
+        ("01302023", "sw      x19,0(x0)"),
+        ("01402023", "sw      x20,0(x0)"),
+        ("01502023", "sw      x21,0(x0)"),
+        ("01602023", "sw      x22,0(x0)"),
+        ("01702023", "sw      x23,0(x0)"),
+        ("01802023", "sw      x24,0(x0)"),
+        ("01902023", "sw      x25,0(x0)"),
+        ("01a02023", "sw      x26,0(x0)"),
+        ("01b02023", "sw      x27,0(x0)"),
+        ("01c02023", "sw      x28,0(x0)"),
+        ("01d02023", "sw      x29,0(x0)"),
+        ("01e02023", "sw      x30,0(x0)"),
+        ("01f02023", "sw      x31,0(x0)")
+      )
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      var i = 0
+      while (i < instructionsLoad.length) {
+        // Drive the dut inputs
+        val (hex, asm) = instructionsLoad(i)
+        dut.io.instructionMemory.data #= Integer.parseUnsignedInt(hex, 16)
+        dut.clockDomain.waitRisingEdge()
+        i += 1
+      }
+      i = 0
+      while (i < instructionsStore.length) {
+        // Drive the dut inputs
+        val (hex, asm) = instructionsStore(i)
+        dut.io.instructionMemory.data #= Integer.parseUnsignedInt(hex, 16)
+        dut.clockDomain.waitRisingEdge()
+
+        if (i > 0) {
+          assert(dut.io.dataMemory.wdata.toInt == i + 100)
+        } else {
+          assert(dut.io.dataMemory.wdata.toInt == 0)
+        }
+        i += 1
+      }
+    }
+/*
     compiled.doSim("test_BranchCondGen") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
@@ -547,6 +645,7 @@ object SodorSim {
       assert(dut.brEq.toInt == 1)
 
     }
+*/
   }
 }
 
