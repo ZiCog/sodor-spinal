@@ -40,6 +40,8 @@ object SodorSim {
       dut.brLt.simPublic()
       dut.brLtu.simPublic()
       dut.io.dataMemory.addr.simPublic()
+      dut.alu.io.op1.simPublic()
+      dut.alu.io.op2.simPublic()
       dut
     }
 
@@ -610,6 +612,75 @@ object SodorSim {
         i += 1
       }
     }
+
+    compiled.doSim("test_ALU") { dut =>
+      val instructions = Array (
+        ("02a00093", "addi    x1,x0,42"),
+        ("03500113", "addi    x2,x0,53"),
+        ("002081b3", "add     x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("03500093", "addi    x1,x0,53"),
+        ("02a00113", "addi    x2,x0,42"),
+        ("402081b3", "sub     x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("03500093", "addi    x1,x0,53"),
+        ("00200113", "addi    x2,x0,2 "),
+        ("002091b3", "sll     x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("02a00093", "addi    x1,x0,42"),
+        ("03500113", "addi    x2,x0,53"),
+        ("0020a1b3", "slt     x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("03500093", "addi    x1,x0,53"),
+        ("02a00113", "addi    x2,x0,42"),
+        ("0020a1b3", "slt     x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("fd600093", "addi    x1,x0,-42"),
+        ("fcb00113", "addi    x2,x0,-53"),
+        ("0020b1b3", "sltu    x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("fcb00093", "addi    x1,x0,-53"),
+        ("fd600113", "addi    x2,x0,-42"),
+        ("0020b1b3", "sltu    x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("7bc00093", "addi    x1,x0,1980"),
+        ("62b00113", "addi    x2,x0,1579"),
+        ("0020c1b3", "xor     x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("03500093", "addi    x1,x0,53"),
+        ("00200113", "addi    x2,x0,2"),
+        ("0020d1b3", "srl     x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("fcb00093", "addi    x1,x0,-53"),
+        ("00200113", "addi    x2,x0,2"),
+        ("4020d1b3", "sra     x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("05500093", "addi    x1,x0,85"),
+        ("0aa00113", "addi    x2,x0,170"),
+        ("0020e1b3", "or      x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)"),
+        ("7ff00093", "addi    x1,x0,2047"),
+        ("05500113", "addi    x2,x0,85"),
+        ("0020f1b3", "and     x3,x1,x2"),
+        ("00302023", "sw      x3,0(x0)")
+      )
+
+      // Fork a process to generate the reset and the clock on the dut
+      dut.clockDomain.forkStimulus(period = 10)
+
+      var i = 0
+      while (i < instructions.length) {
+        // Drive the dut inputs
+        val (hex, asm) = instructions(i)
+        dut.io.instructionMemory.data #= Integer.parseUnsignedInt(hex, 16)
+        dut.clockDomain.waitRisingEdge()
+
+        println(hex, asm)
+        println(dut.io.dataMemory.wdata.toInt)
+        i += 1
+      }
+    }
+
 /*
     compiled.doSim("test_BranchCondGen") { dut =>
 
