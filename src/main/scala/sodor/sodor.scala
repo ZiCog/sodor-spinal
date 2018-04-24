@@ -40,6 +40,7 @@ object M extends SpinalEnum {
   val XRD, XWR, X = newElement()
 }
 
+// Allowed memory masks
 object MT extends SpinalEnum {
   val W, B, BU, H, HU, X = newElement()
 }
@@ -421,9 +422,11 @@ class Decode extends Component {
     val rfWen = out Bits (1 bits)
     val memVal = out Bits (1 bits)
     val memRw = out Bits (1 bits)
+    val memMask = out Bits (3 bits)
   }
   val opCode = B(io.instruction(6 downto 0))
   val funct3 = B(io.instruction(14 downto 12))
+  val funct7 = B(io.instruction(31 downto 25))
 
   val controlSignals = Map (
               //  val   | BR    | op1     | op2     | ALU       | wb     | rf    | mem   | mem   | mask  | csr   |
@@ -501,6 +504,7 @@ class Decode extends Component {
     io.rfWen := rfWen.asBits               // TODO Inhibit rfWen on stall or exception.
     io.memVal := memEnable.asBits
     io.memRw := memWr.asBits
+    io.memMask := memMask.asBits
   }
 
   // Assume instruction is invalid unless proven otherwise.
@@ -598,7 +602,7 @@ class Decode extends Component {
           lookupControlSignals("SLLI")
         }
         is (opFunct3.srl.asBits) {
-          when (io.instruction(30)) {
+          when (funct7 === B"0100000") {
             lookupControlSignals("SRAI")
           } otherwise {
             lookupControlSignals("SRLI")
@@ -609,7 +613,7 @@ class Decode extends Component {
     is(opCodeSelections.op.asBits) {
       switch(funct3) {
         is (opFunct3.add.asBits) {
-          when (io.instruction(30)) {
+          when (funct7 === B"0100000") {
             lookupControlSignals("SUB")
           } otherwise {
             lookupControlSignals("ADD")
@@ -628,10 +632,10 @@ class Decode extends Component {
           lookupControlSignals("XOR")
         }
         is (opFunct3.srl.asBits) {
-          when (io.instruction(30)) {
-            lookupControlSignals("SRL")
-          } otherwise {
+          when (funct7 === B"0100000") {
             lookupControlSignals("SRA")
+          } otherwise {
+            lookupControlSignals("SRL")
           }
         }
         is (opFunct3.or.asBits) {
@@ -703,7 +707,7 @@ class Sodor extends Component {
   val aluResult = SInt(32 bits)
   val wd = SInt(32 bits)
 
-  // Control signals.
+  // Control path signals.
   val pcSel = Bits (3 bits)
   val op1Sel = Bits (2 bits)
   val op2Sel = Bits (3 bits)
@@ -711,6 +715,7 @@ class Sodor extends Component {
   val wbSel = Bits (3 bits)
   val memRw = Bits (1 bits)
   val memVal = Bits (1 bits)
+  val memMask = Bits (3 bits)
   val rfWen = Bits (1 bits)
   val brEq = Bits (1 bits)
   val brLt = Bits (1 bits)
@@ -815,6 +820,7 @@ class Sodor extends Component {
   aluFun := decode.io.aluFun
   memRw := decode.io.memRw
   memVal := decode.io.memVal
+  memMask := decode.io.memMask
   op1Sel := decode.io.op1Sel
   op2Sel := decode.io.op2Sel
   rfWen := decode.io.rfWen
