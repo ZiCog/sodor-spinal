@@ -427,6 +427,7 @@ class Decode extends Component {
   val opCode = B(io.instruction(6 downto 0))
   val funct3 = B(io.instruction(14 downto 12))
   val funct7 = B(io.instruction(31 downto 25))
+  val funct10 = funct7 ## funct3
 
   val controlSignals = Map (
               //  val   | BR    | op1     | op2     | ALU       | wb     | rf    | mem   | mem   | mask  | csr   |
@@ -544,6 +545,9 @@ class Decode extends Component {
         is (branchFunct3.bgeu.asBits) {
           lookupControlSignals("BGEU")
         }
+        default {
+          lookupControlSignals("INVALID")
+        }
       }
     }
     is(opCodeSelections.load.asBits) {
@@ -563,6 +567,9 @@ class Decode extends Component {
         is (loadFunct3.lhu.asBits) {
           lookupControlSignals("LHU")
         }
+        default {
+          lookupControlSignals("INVALID")
+        }
       }
     }
     is(opCodeSelections.store.asBits) {
@@ -575,6 +582,9 @@ class Decode extends Component {
         }
         is (storeFunct3.sw.asBits) {
           lookupControlSignals("SW")
+        }
+        default {
+          lookupControlSignals("INVALID")
         }
       }
     }
@@ -599,7 +609,11 @@ class Decode extends Component {
           lookupControlSignals("ANDI")
         }
         is (opFunct3.sll.asBits) {
-          lookupControlSignals("SLLI")
+          when (funct7 === B"0000000") {
+            lookupControlSignals("SLLI")
+          } otherwise {
+            lookupControlSignals("INVALID")
+          }
         }
         is (opFunct3.srl.asBits) {
           when (funct7 === B"0100000") {
@@ -611,44 +625,53 @@ class Decode extends Component {
       }
     }
     is(opCodeSelections.op.asBits) {
-      switch(funct3) {
-        is (opFunct3.add.asBits) {
-          when (funct7 === B"0100000") {
-            lookupControlSignals("SUB")
-          } otherwise {
+      when (funct7 === B"0000000") {
+        switch(funct3) {
+          is (opFunct3.add.asBits) {
             lookupControlSignals("ADD")
           }
-        }
-        is (opFunct3.sll.asBits) {
-          lookupControlSignals("SLL")
-        }
-        is (opFunct3.slt.asBits) {
-          lookupControlSignals("SLT")
-        }
-        is (opFunct3.sltu.asBits) {
-          lookupControlSignals("SLTU")
-        }
-        is (opFunct3.xor.asBits) {
-          lookupControlSignals("XOR")
-        }
-        is (opFunct3.srl.asBits) {
-          when (funct7 === B"0100000") {
-            lookupControlSignals("SRA")
-          } otherwise {
+          is (opFunct3.sll.asBits) {
+            lookupControlSignals("SLL")
+          }
+          is (opFunct3.slt.asBits) {
+            lookupControlSignals("SLT")
+          }
+          is (opFunct3.sltu.asBits) {
+            lookupControlSignals("SLTU")
+          }
+          is (opFunct3.xor.asBits) {
+            lookupControlSignals("XOR")
+          }
+          is (opFunct3.srl.asBits) {
             lookupControlSignals("SRL")
           }
+          is (opFunct3.or.asBits) {
+            lookupControlSignals("OR")
+          }
+          is (opFunct3.and.asBits) {
+            lookupControlSignals("AND")
+          }
         }
-        is (opFunct3.or.asBits) {
-          lookupControlSignals("OR")
+      } elsewhen (funct7 === B"0100000") {
+        switch(funct3) {
+          is(opFunct3.add.asBits) {
+            lookupControlSignals("SUB")
+          }
+          is(opFunct3.srl.asBits) {
+            lookupControlSignals("SRA")
+          }
         }
-        is (opFunct3.and.asBits) {
-          lookupControlSignals("AND")
+        default {
+          lookupControlSignals("INVALID")
         }
       }
     }
     is(opCodeSelections.miscMem.asBits) {
     }
     is(opCodeSelections.system.asBits) {
+    }
+    default {
+      lookupControlSignals("INVALID")
     }
   }
 
