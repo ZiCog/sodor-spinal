@@ -1,4 +1,4 @@
-package Sodor
+package sodor
 
 import Array._
 import spinal.core._
