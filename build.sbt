@@ -15,3 +15,4 @@ addCompilerPlugin("org.scala-lang.plugins" % "scala-continuations-plugin_2.11.6"
 scalacOptions += "-P:continuations:enable"
 fork := true
 
+

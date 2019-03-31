@@ -7,11 +7,11 @@ import spinal.core.sim._
 
 import scala.util.Random
 
-// sodor's testbench
+// Sodor test bench
 object SodorSim {
   def main(args: Array[String]) {
-    val compiled = SimConfig.withWave.compile{
-      val dut = new Sodor ;
+    val compiled = SimConfig.withWave.compile {
+      val dut = new Sodor;
       dut.programCounter.io.pc4.simPublic()
       dut.programCounter.io.pc.simPublic()
       dut.programCounter.io.pcNext.simPublic()
@@ -53,16 +53,16 @@ object SodorSim {
       var modelPc = 0
 
       var idx = 0
-      while(idx < 10){
+      while (idx < 10) {
 
         // Drive the dut inputs
-        dut.io.instructionMemory.data #= Integer.parseInt("00000000000000000000000000010011", 2)  // NOP (ADDI)
+        dut.io.instructionMemory.data #= Integer.parseInt("00000000000000000000000000010011", 2) // NOP (ADDI)
 
         // Wait a rising edge on the clock
         dut.clockDomain.waitRisingEdge()
 
         // Check that the dut values match with the reference model ones
-        assert(dut.programCounter.io.pc.toInt ==  modelPc)
+        assert(dut.programCounter.io.pc.toInt == modelPc)
         assert(dut.programCounter.io.pc4.toInt == modelPc + 4)
         assert(dut.io.instructionMemory.addr.toInt == modelPc)
 
@@ -143,8 +143,7 @@ object SodorSim {
       assert(dut.sTypeImmediate.toInt == -1)
     }
 
-    compiled.doSim("test_JumpTargetGen")
-    { dut =>
+    compiled.doSim("test_JumpTargetGen") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
@@ -179,8 +178,7 @@ object SodorSim {
       // TODO MORE JAL target tests required..
     }
 
-    compiled.doSim("test_BranchTargetGen")
-    { dut =>
+    compiled.doSim("test_BranchTargetGen") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
@@ -258,8 +256,8 @@ object SodorSim {
 
       // Check that the dut values match with the reference model ones
       assert(dut.rs1.toInt == 0)
-      assert(dut.op1Sel.toInt  == 0)
-      assert(dut.op2Sel.toInt  == 0)
+      assert(dut.op1Sel.toInt == 0)
+      assert(dut.op2Sel.toInt == 0)
       assert(dut.aluFun.toInt == 0)
       assert(dut.aluResult.toInt == 8)
       assert(dut.io.dataMemory.addr.toInt == 8)
@@ -291,8 +289,8 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      assert(dut.op1Sel.toInt  == 0)
-      assert(dut.op2Sel.toInt  == 1)
+      assert(dut.op1Sel.toInt == 0)
+      assert(dut.op2Sel.toInt == 1)
       assert(dut.aluFun.toInt == 0)
       assert(dut.rfWen.toInt == 0)
       assert(dut.io.dataMemory.rw.toInt == 1)
@@ -316,8 +314,8 @@ object SodorSim {
       // Wait a rising edge on the clock
       dut.clockDomain.waitRisingEdge()
 
-      assert(dut.op1Sel.toInt  == 1)
-      assert(dut.op2Sel.toInt  == 4)
+      assert(dut.op1Sel.toInt == 1)
+      assert(dut.op2Sel.toInt == 4)
       assert(dut.aluFun.toInt == 10)
       assert(dut.rfWen.toInt == 1)
       assert(dut.io.dataMemory.rw.toInt == 0)
@@ -333,8 +331,8 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      assert(dut.op1Sel.toInt  == 0)
-      assert(dut.op2Sel.toInt  == 1)
+      assert(dut.op1Sel.toInt == 0)
+      assert(dut.op2Sel.toInt == 1)
       assert(dut.aluFun.toInt == 0)
       assert(dut.rfWen.toInt == 0)
       assert(dut.io.dataMemory.rw.toInt == 1)
@@ -350,7 +348,7 @@ object SodorSim {
       dut.clockDomain.forkStimulus(period = 10)
 
       // Bump the PC up a bit by driving a few NOPs in
-      dut.io.instructionMemory.data #= Integer.parseInt("00000000000000000000000000010011", 2)  // NOP (ADDI)
+      dut.io.instructionMemory.data #= Integer.parseInt("00000000000000000000000000010011", 2) // NOP (ADDI)
       dut.clockDomain.waitRisingEdge()
       dut.clockDomain.waitRisingEdge()
       dut.clockDomain.waitRisingEdge()
@@ -361,9 +359,9 @@ object SodorSim {
 
       // Wait a rising edge on the clock
       dut.clockDomain.waitRisingEdge()
-      assert(dut.pc.toInt  == 16)
-      assert(dut.op1Sel.toInt  == 1)
-      assert(dut.op2Sel.toInt  == 2)
+      assert(dut.pc.toInt == 16)
+      assert(dut.op1Sel.toInt == 1)
+      assert(dut.op2Sel.toInt == 2)
       assert(dut.aluFun.toInt == 0)
       assert(dut.rfWen.toInt == 1)
       assert(dut.io.dataMemory.rw.toInt == 0)
@@ -379,8 +377,8 @@ object SodorSim {
       dut.clockDomain.waitRisingEdge()
 
       // Check that the dut values match with the reference model ones
-      assert(dut.op1Sel.toInt  == 0)
-      assert(dut.op2Sel.toInt  == 1)
+      assert(dut.op1Sel.toInt == 0)
+      assert(dut.op2Sel.toInt == 1)
       assert(dut.aluFun.toInt == 0)
       assert(dut.rfWen.toInt == 0)
       assert(dut.io.dataMemory.rw.toInt == 1)
@@ -396,12 +394,12 @@ object SodorSim {
       dut.clockDomain.forkStimulus(period = 10)
 
       // Bump the PC up a bit by driving a few NOPs in
-      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000000000000010011", 2)  // NOP (ADDI)
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000000000000010011", 2) // NOP (ADDI)
       dut.clockDomain.waitRisingEdge()
       dut.clockDomain.waitRisingEdge()
       dut.clockDomain.waitRisingEdge()
       dut.clockDomain.waitRisingEdge()
-      assert(dut.pc.toInt  == 12)
+      assert(dut.pc.toInt == 12)
 
       // Drive the dut inputs with JAL R1, 4096
       dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000001000011101111", 2) // addi
@@ -409,9 +407,9 @@ object SodorSim {
       // Wait a rising edge on the clock
       dut.clockDomain.waitRisingEdge()
 
-      assert(dut.pc.toInt  == 16)
-      assert(dut.op1Sel.toInt  == 3)
-      assert(dut.op2Sel.toInt  == 4)
+      assert(dut.pc.toInt == 16)
+      assert(dut.op1Sel.toInt == 3)
+      assert(dut.op2Sel.toInt == 4)
       assert(dut.aluFun.toInt == 11)
       assert(dut.rfWen.toInt == 1)
       assert(dut.io.dataMemory.rw.toInt == 0)
@@ -420,7 +418,7 @@ object SodorSim {
       assert(dut.pcNext.toInt == 4112)
       assert(dut.regFile.wd.toInt == 20)
       assert(dut.regFile.wa.toInt == 1)
-/*
+      /*
       // Drive the dut inputs with sw reg 1 to memory[imm + reg2]
       dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000100000100000010001000100011", 2) // sw
 
@@ -457,7 +455,7 @@ object SodorSim {
       dut.clockDomain.forkStimulus(period = 10)
 
       // Bump the PC up a bit by driving a few NOPs in
-      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000000000000010011", 2)  // NOP (ADDI)
+      dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00000000000000000000000000010011", 2) // NOP (ADDI)
       dut.clockDomain.waitRisingEdge()
       dut.clockDomain.waitRisingEdge()
       dut.clockDomain.waitRisingEdge()
@@ -466,7 +464,7 @@ object SodorSim {
       dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00010000000000000000000010010011", 2) // addi
 
       dut.clockDomain.waitRisingEdge()
-      assert(dut.pc.toInt  == 12)
+      assert(dut.pc.toInt == 12)
 
       // Drive the dut inputs with JALR R1
       dut.io.instructionMemory.data #= Integer.parseUnsignedInt("00001000000100001000000011100111", 2) // addi
@@ -474,9 +472,9 @@ object SodorSim {
       // Wait a rising edge on the clock
       dut.clockDomain.waitRisingEdge()
 
-      assert(dut.pc.toInt  == 16)
-      assert(dut.op1Sel.toInt  == 3)
-      assert(dut.op2Sel.toInt  == 4)
+      assert(dut.pc.toInt == 16)
+      assert(dut.op1Sel.toInt == 3)
+      assert(dut.op2Sel.toInt == 4)
       assert(dut.aluFun.toInt == 11)
       assert(dut.rfWen.toInt == 1)
       assert(dut.io.dataMemory.rw.toInt == 0)
@@ -517,7 +515,7 @@ object SodorSim {
     }
 
     compiled.doSim("test_RegFile") { dut =>
-      val instructionsLoad = Array (
+      val instructionsLoad = Array(
         ("06400013", "addi    x0,x0,100"),
         ("06500093", "addi    x1,x0,101"),
         ("06600113", "addi    x2,x0,102"),
@@ -551,7 +549,7 @@ object SodorSim {
         ("08200f13", "addi    x30,x0,130"),
         ("08300f93", "addi    x31,x0,131")
       )
-      val instructionsStore = Array (
+      val instructionsStore = Array(
         ("00002023", "sw      x0,0(x0)"),
         ("00102023", "sw      x1,0(x0)"),
         ("00202023", "sw      x2,0(x0)"),
@@ -614,7 +612,7 @@ object SodorSim {
     }
 
     compiled.doSim("test_ALU") { dut =>
-      val instructions = Array (
+      val instructions = Array(
         ("02a00093", "addi    x1,x0,42"),
         ("03500113", "addi    x2,x0,53"),
         ("002081b3", "add     x3,x1,x2"),
@@ -681,7 +679,7 @@ object SodorSim {
       }
     }
 
-/*
+    /*
     compiled.doSim("test_BranchCondGen") { dut =>
 
       // Fork a process to generate the reset and the clock on the dut
@@ -716,7 +714,43 @@ object SodorSim {
       assert(dut.brEq.toInt == 1)
 
     }
+
 */
+  }
+}
+
+object MemorySim {
+  def main(args: Array[String]) {
+
+    val compiled2 = SimConfig.withWave.compile {
+      val dut = new Memory(32, 1024, "firmware.hex")
+      dut
+    }
+
+    compiled2.doSim("test 1") { dut =>
+
+      // Fork a process to generate the reset and the clock on the DUT
+      dut.clockDomain.forkStimulus(period = 10)
+
+      var address = 0
+      while (address < 128) {
+        // Drive the DUT inputs
+        dut.io.enable #= true
+        dut.io.mem_valid #= true
+        dut.io.mem_instr #= false
+        dut.io.mem_wstrb #= 0
+        dut.io.mem_wdata #= 0
+        dut.io.mem_addr #= address
+
+        // Wait a rising edge on the clock
+        dut.clockDomain.waitRisingEdge()
+
+        // Check the DUT output
+        println(address.toHexString, dut.io.mem_rdata.toInt.toHexString)
+
+        address = address + 1
+      }
+    }
   }
 }
 
