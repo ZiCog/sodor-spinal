@@ -38,7 +38,7 @@ class Memory (dataWidth : Int, depth : Int, initFile: String) extends Component 
   memory.init (generateInitialContent)
 
   memory.write(
-    io.mem_addr,
+    io.mem_addr >> U(2),
     io.mem_wdata,
     io.enable & io.mem_valid,
     io.mem_wstrb.asBits
@@ -46,7 +46,7 @@ class Memory (dataWidth : Int, depth : Int, initFile: String) extends Component 
 
   // Wire-OR'ed bus outputs.
   when (io.enable) {
-    rdata := memory.readAsync(io.mem_addr)
+    rdata := memory.readAsync(io.mem_addr >> U(2))
   } otherwise {
     rdata := 0
   }
