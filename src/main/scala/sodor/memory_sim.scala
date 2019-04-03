@@ -10,6 +10,8 @@ import scala.util.Random
 object MemorySim {
 
   def write32 (dut : Memory, address: Int, data: Int) = {
+    assert((address & 0x03) == 0)
+
     // Drive inputs for write operation
     dut.io.enable #= true
     dut.io.mem_valid #= true
@@ -31,12 +33,18 @@ object MemorySim {
   }
 
   def write16 (dut : Memory, address: Int, data: Int) = {
+    assert((address & 0x01) == 0)
     // Drive inputs for write operation
     dut.io.enable #= true
     dut.io.mem_valid #= true
     dut.io.mem_instr #= false
-    dut.io.mem_wstrb #= 0x3 << ((address & 1) * 2)   // TODO: Check this
-    dut.io.mem_wdata #= data
+    if ((address & 0x3) == 0) {
+      dut.io.mem_wstrb #= 0x03
+      dut.io.mem_wdata #= data
+    } else {
+      dut.io.mem_wstrb #= 0x0C
+      dut.io.mem_wdata #= data << 16
+    }
     dut.io.mem_addr #= address
 
     // Wait for a rising edge on the clock
@@ -56,8 +64,8 @@ object MemorySim {
     dut.io.enable #= true
     dut.io.mem_valid #= true
     dut.io.mem_instr #= false
-    dut.io.mem_wstrb #= 1 << (address & 0x3)    // TODO: Check this
-    dut.io.mem_wdata #= data << ((address & 0x3) * 8) // TODO: Check this
+    dut.io.mem_wstrb #= 1 << (address & 0x3)
+    dut.io.mem_wdata #= data << ((address & 0x3) * 8)
     dut.io.mem_addr #= address
 
     // Wait for a rising edge on the clock
@@ -73,6 +81,8 @@ object MemorySim {
   }
 
   def read32 (dut : Memory, address: Int) = {
+    assert((address & 0x03) == 0)
+
     // Drive inputs for read operation
     dut.io.enable #= true
     dut.io.mem_valid #= true
@@ -95,8 +105,9 @@ object MemorySim {
     dut.io.mem_rdata
   }
 
-  // TODO: Check this
   def read16 (dut : Memory, address: Int) = {
+    assert((address & 0x01) == 0)
+
     // Drive inputs for read operation
     dut.io.enable #= true
     dut.io.mem_valid #= true
@@ -116,10 +127,13 @@ object MemorySim {
     dut.io.mem_wdata #= 0
     dut.io.mem_addr #= 0
 
-    dut.io.mem_rdata
+    if ((address & 0x3) == 0) {
+      dut.io.mem_rdata.toInt & 0xffff
+    } else {
+      (dut.io.mem_rdata.toInt >> 16) & 0xffff
+    }
   }
 
-  // TODO: Check this
   def read8 (dut : Memory, address: Int) = {
     // Drive inputs for read operation
     dut.io.enable #= true
@@ -215,38 +229,32 @@ object MemorySim {
       println("PASS")
     }
 
-    // Write and read random words and check
+    // Write and read half words and check
     compiled.doSim("test 4") { dut =>
       val random = scala.util.Random
 
       // Fork a process to generate the reset and the clock on the DUT
       dut.clockDomain.forkStimulus(period = 10)
 
-      val address = 0
-
-      write32(dut, address, 0)
-      val res = read32(dut, address)
-      println(address.toHexString, res.toInt.toHexString)
-
-      write8(dut, address + 0, 0xf0)
-      val res0 = read8(dut, address + 0)
-      println(address.toHexString, res0.toInt.toHexString)
-
-      write8(dut, address + 1, 0xf1)
-      val res1 = read8(dut, address + 1)
-      println(address.toHexString, res1.toInt.toHexString)
-
-      write8(dut, address + 2, 0xf2)
-      val res2 = read8(dut, address + 2)
-      println(address.toHexString, res2.toInt.toHexString)
-
-      write8(dut, address + 3, 0xf3)
-      val res3 = read8(dut, address + 3)
-      println(address.toHexString, res3.toInt.toHexString)
-
-      val ress = read32(dut, address + 3)
-      println(address.toHexString, ress.toInt.toHexString)
-
+      var loops = 1000
+      while (loops != 0) {
+        random.setSeed(0xdeadbeef)
+        var address = 0
+        while (address < 1024) {
+          val r = random.nextInt & 0xffff
+          write16(dut, address, r)
+          address = address + 2
+        }
+        random.setSeed(0xdeadbeef)
+        address = 0
+        while (address < 1024) {
+          val expected = random.nextInt & 0xffff
+          val res = read16(dut, address)
+          assert(expected == res.toInt)
+          address = address + 2
+        }
+        loops = loops - 1
+      }
       println("PASS")
     }
 
