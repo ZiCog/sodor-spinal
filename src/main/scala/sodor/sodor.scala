@@ -859,7 +859,7 @@ class Sodor extends Component {
 object SodorVerilog {
   def main(args: Array[String]) {
     SpinalVerilog(new Sodor).printPruned().printUnused()
-    SpinalVerilog(new Memory(32, 1024, "firmware.hex")).printPruned().printUnused()
+    SpinalVerilog(new Memory(32, 16 * 1024, "firmware.hex")).printPruned().printUnused()
   }
 }
 
@@ -867,6 +867,6 @@ object SodorVerilog {
 object SodorVhdl {
   def main(args: Array[String]) {
     SpinalVhdl(new Sodor).printPruned().printUnused()
-    SpinalVhdl(new Memory(32, 1024, "firmware.hex")).printPruned().printUnused()
+    SpinalVhdl(new Memory(32, 16 * 1024, "firmware.hex")).printPruned().printUnused()
   }
 }

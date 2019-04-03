@@ -24,7 +24,7 @@ class Memory (dataWidth : Int, depth : Int, initFile: String) extends Component 
     for (line <- Source.fromFile(initFile).getLines) {
       val tokens: Array[String] = line.split("(//)").map(_.trim)
       if (tokens.length > 0 && tokens(0) != "") {
-        val i = Integer.parseInt(tokens(0), 16)
+        val i = BigInt(tokens(0), 16).toInt
         buffer.append(i)
       }
     }

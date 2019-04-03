@@ -161,8 +161,13 @@ object MemorySim {
 
   def main(args: Array[String]) {
 
+    val width = 32
+    val depth = 16 * 1024
+    val maxAddress = 16 * 1024   // FIXME: For some reason using 32 * 1024 fails here.
+    val initFile = "firmware.hex"
+    
     val compiled = SimConfig.withWave.compile {
-      val dut = new Memory(32, 1024, "firmware.hex")
+      val dut = new Memory(width, depth, initFile)
       dut
     }
 
@@ -173,9 +178,9 @@ object MemorySim {
       dut.clockDomain.forkStimulus(period = 10)
 
       var address = 0
-      while (address < 1024) {
-        val res = read32(dut, address)
-        println(address.toHexString, res.toInt.toHexString)
+      while (address < maxAddress) {
+        val res = read32(dut, address).toInt
+        println(f"$address%08X: $res%08X")
         address = address + 4
       }
       println("PASS")
@@ -185,15 +190,15 @@ object MemorySim {
     compiled.doSim("Test 2") { dut =>
 
       // Fork a process to generate the reset and the clock on the DUT
-      dut.clockDomain.forkStimulus(period = 10)
+      dut.clockDomain.forkStimulus(period   = 10)
 
       var address = 0
-      while (address < 1024) {
+      while (address < maxAddress) {
         write32(dut, address, 0)
         address = address + 4
       }
       address = 0
-      while (address < 1024) {
+      while (address < maxAddress) {
         val res = read32(dut, address)
         assert(res.toInt == 0)
         address = address + 4
@@ -212,14 +217,14 @@ object MemorySim {
       while (loops != 0) {
         random.setSeed(0xdeadbeef)
         var address = 0
-        while (address < 1024) {
+        while (address < maxAddress) {
           val r = random.nextInt
           write32(dut, address, r)
           address = address + 4
         }
         random.setSeed(0xdeadbeef)
         address = 0
-        while (address < 1024) {
+        while (address < maxAddress) {
           val expected = random.nextInt
           val res = read32(dut, address)
           assert(expected == res.toInt)
@@ -241,14 +246,14 @@ object MemorySim {
       while (loops != 0) {
         random.setSeed(0xdeadbeef)
         var address = 0
-        while (address < 1024) {
+        while (address < maxAddress) {
           val r = random.nextInt & 0xffff
           write16(dut, address, r)
           address = address + 2
         }
         random.setSeed(0xdeadbeef)
         address = 0
-        while (address < 1024) {
+        while (address < maxAddress) {
           val expected = random.nextInt & 0xffff
           val res = read16(dut, address)
           assert(expected == res.toInt)
@@ -270,14 +275,14 @@ object MemorySim {
       while (loops != 0) {
         random.setSeed(0xdeadbeef)
         var address = 0
-        while (address < 1024) {
+        while (address < maxAddress) {
           val r = random.nextInt & 0xff
           write8(dut, address, r)
           address = address + 1
         }
         random.setSeed(0xdeadbeef)
         address = 0
-        while (address < 1024) {
+        while (address < maxAddress) {
           val expected = random.nextInt & 0xff
           val res = read8(dut, address)
           assert(expected == res.toInt)
