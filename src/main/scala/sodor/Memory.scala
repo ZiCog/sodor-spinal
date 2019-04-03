@@ -17,7 +17,7 @@ class Memory (dataWidth : Int, depth : Int, initFile: String) extends Component 
   }
 
   val rdata = SInt(dataWidth bits)
-  val ready = io.mem_valid & io.enable
+  val ready = Bool
 
   def generateInitialContent = {
     val buffer = new ArrayBuffer[BigInt]
@@ -45,10 +45,12 @@ class Memory (dataWidth : Int, depth : Int, initFile: String) extends Component 
   )
 
   // Wire-OR'ed bus outputs.
-  when (io.enable) {
+  when (io.enable & io.mem_valid) {
     rdata := memory.readAsync(io.mem_addr >> U(2))
+    ready := True
   } otherwise {
     rdata := 0
+    ready := False
   }
   io.mem_ready := ready
   io.mem_rdata := rdata

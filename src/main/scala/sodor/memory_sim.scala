@@ -34,6 +34,7 @@ object MemorySim {
 
   def write16 (dut : Memory, address: Int, data: Int) = {
     assert((address & 0x01) == 0)
+
     // Drive inputs for write operation
     dut.io.enable #= true
     dut.io.mem_valid #= true
@@ -166,7 +167,7 @@ object MemorySim {
     }
 
     // Check initial RAM content.
-    compiled.doSim("test 1") { dut =>
+    compiled.doSim("Test 1") { dut =>
 
       // Fork a process to generate the reset and the clock on the DUT
       dut.clockDomain.forkStimulus(period = 10)
@@ -181,7 +182,7 @@ object MemorySim {
     }
 
     // Clear RAM and check
-    compiled.doSim("test 2") { dut =>
+    compiled.doSim("Test 2") { dut =>
 
       // Fork a process to generate the reset and the clock on the DUT
       dut.clockDomain.forkStimulus(period = 10)
@@ -201,7 +202,7 @@ object MemorySim {
     }
 
     // Write and read random words and check
-    compiled.doSim("test 3") { dut =>
+    compiled.doSim("Test 3") { dut =>
       val random = scala.util.Random
 
       // Fork a process to generate the reset and the clock on the DUT
@@ -230,7 +231,7 @@ object MemorySim {
     }
 
     // Write and read half words and check
-    compiled.doSim("test 4") { dut =>
+    compiled.doSim("Test 4") { dut =>
       val random = scala.util.Random
 
       // Fork a process to generate the reset and the clock on the DUT
@@ -259,7 +260,7 @@ object MemorySim {
     }
 
     // Write and read random bytes and check
-    compiled.doSim("test 5") { dut =>
+    compiled.doSim("Test 5") { dut =>
       val random = scala.util.Random
 
       // Fork a process to generate the reset and the clock on the DUT
@@ -284,6 +285,43 @@ object MemorySim {
         }
         loops = loops - 1
       }
+      println("PASS")
+    }
+
+    // Exercise enable and valid signals
+    compiled.doSim("Test 6") { dut =>
+
+      // Fork a process to generate the reset and the clock on the DUT
+      dut.clockDomain.forkStimulus(period = 10)
+
+      write32(dut, 0, 0xffffffff)
+      val res = read32(dut, 0)
+      assert(res.toInt == 0xffffffff)
+
+      dut.io.enable #= false
+      dut.io.mem_valid #= false
+      dut.clockDomain.waitRisingEdge()
+      assert(!dut.io.mem_ready.toBoolean)
+      assert(dut.io.mem_rdata.toInt == 0)
+
+      dut.io.enable #= false
+      dut.io.mem_valid #= true
+      dut.clockDomain.waitRisingEdge()
+      assert(!dut.io.mem_ready.toBoolean)
+      assert(dut.io.mem_rdata.toInt == 0)
+
+      dut.io.enable #= true
+      dut.io.mem_valid #= false
+      dut.clockDomain.waitRisingEdge()
+      assert(!dut.io.mem_ready.toBoolean)
+      assert(dut.io.mem_rdata.toInt == 0)
+
+      dut.io.enable #= true
+      dut.io.mem_valid #= true
+      dut.clockDomain.waitRisingEdge()
+      assert(dut.io.mem_ready.toBoolean)
+      assert(dut.io.mem_rdata.toInt == 0xffffffff)
+
       println("PASS")
     }
   }
