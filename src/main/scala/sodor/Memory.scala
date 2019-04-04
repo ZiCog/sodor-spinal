@@ -38,7 +38,7 @@ class Memory (width : Int, depth : Int, initFile: String) extends Component {
   memory.init (generateInitialContent)
 
   val addr = UInt(14 bits)
-  addr := io.mem_addr >> 2
+  addr := io.mem_addr >> 2  //FIXME: Causes truncation warning in Quartus.
 
   memory.write(
     addr,

@@ -855,6 +855,8 @@ class Sodor extends Component {
   io.dataMemory.rw := memRw
 }
 
+// FIXME : Test against www.github.com/riscv/riscv-compiance
+
 // Generate the Sodor Verilog
 object SodorVerilog {
   def main(args: Array[String]) {

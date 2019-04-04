@@ -164,7 +164,7 @@ object MemorySim {
     val width = 32
     val depth = 16 * 1024
     val maxAddress = 64 * 1024
-    val initFile = "testFirmware.hex"
+    val initFile = "test_bench/testFirmware.hex"
     
     val compiled = SimConfig.withWave.compile {
       val dut = new Memory(width, depth, initFile)
