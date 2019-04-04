@@ -163,15 +163,15 @@ object MemorySim {
 
     val width = 32
     val depth = 16 * 1024
-    val maxAddress = 16 * 1024   // FIXME: For some reason using 32 * 1024 fails here.
-    val initFile = "firmware.hex"
+    val maxAddress = 64 * 1024
+    val initFile = "testFirmware.hex"
     
     val compiled = SimConfig.withWave.compile {
       val dut = new Memory(width, depth, initFile)
       dut
     }
 
-    // Check initial RAM content.
+    // Check initial RAM content against test firmware.hex
     compiled.doSim("Test 1") { dut =>
 
       // Fork a process to generate the reset and the clock on the DUT
@@ -181,6 +181,7 @@ object MemorySim {
       while (address < maxAddress) {
         val res = read32(dut, address).toInt
         println(f"$address%08X: $res%08X")
+        assert(res.toInt == address)
         address = address + 4
       }
       println("PASS")
