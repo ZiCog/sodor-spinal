@@ -214,7 +214,7 @@ object MemorySim {
       // Fork a process to generate the reset and the clock on the DUT
       dut.clockDomain.forkStimulus(period = 10)
 
-      var loops = 1000
+      var loops = 100
       while (loops != 0) {
         random.setSeed(0xdeadbeef)
         var address = 0
@@ -243,7 +243,7 @@ object MemorySim {
       // Fork a process to generate the reset and the clock on the DUT
       dut.clockDomain.forkStimulus(period = 10)
 
-      var loops = 1000
+      var loops = 100
       while (loops != 0) {
         random.setSeed(0xdeadbeef)
         var address = 0
@@ -272,7 +272,7 @@ object MemorySim {
       // Fork a process to generate the reset and the clock on the DUT
       dut.clockDomain.forkStimulus(period = 10)
 
-      var loops = 1000
+      var loops = 100
       while (loops != 0) {
         random.setSeed(0xdeadbeef)
         var address = 0
