@@ -2,23 +2,15 @@ package sodor
 
 import spinal.core._
 
-// Define a Ram as a BlackBox
-class sdram_controller(wordWidth: Int, wordCount: Int) extends BlackBox {
+// Black box that wraps the sdram_controller.v
+// taken from https://github.com/stffrdhrn/sdram-controller
+class sdram_controller() extends BlackBox {
 
-  // SpinalHDL will look at Generic classes to get attributes which
-  // should be used ad VHDL gererics / Verilog parameter
-  // You can use String Int Double Boolean and all SpinalHDL base types
-  // as generic value
-  val generic = new Generic {
-    val wordCount = sdram_controller.this.wordCount
-    val wordWidth = sdram_controller.this.wordWidth
-  }
-
-  // Define io of the VHDL entiry / Verilog module
+  // Define io of the sdram_controller Verilog module
   val io = new Bundle {
     val clk = in Bool
 
-    // HOST interface
+    // HOST interface.
     val wr_addr = in Bits (24 bit)       //input[HADDR_WIDTH - 1: 0] wr_addr;
     val wr_data = in Bits(16 bit)
     val wr_enable = in Bool
@@ -31,7 +23,7 @@ class sdram_controller(wordWidth: Int, wordCount: Int) extends BlackBox {
     val busy = out Bool
     val rst_n = in Bool
 
-    // SDRAM Device Interface
+    // SDRAM Device Interface.
     val addr = out Bits (13 bit)                  // [SDRADDR_WIDTH-1:0];
     val bank_addr = out Bits (2 bit)                   //output [BANK_WIDTH-1:0]    bank_addr;
     val data = inout Bits (16 bit)
@@ -44,17 +36,14 @@ class sdram_controller(wordWidth: Int, wordCount: Int) extends BlackBox {
     val data_mask_high = out Bool
   }
 
-  // Map the current clock domain to the io.clk pin
+  // Map the clock domain to the io.clk pin.
   mapClockDomain(clock=io.clk)
 
-  // Add all rtl dependencies
-  addRTLPath("./rtl/sdram_controller.v")
-  addRTLPath("./sdram_controller_tb.v")
-
+  // Suppress the "io_" prefix on module connection names in the Verilog output.
   noIoPrefix()
 }
 
-// Create the top level and instantiate the SD RAM controller
+// Create the test bench top level and instantiate the SD RAM controller
 class sdram_controller_tb extends Component {
   val io = new Bundle {
     val DRAM_ADDR = out Bits (13 bit)            // output [SDRADDR_WIDTH-1:0];
@@ -69,28 +58,27 @@ class sdram_controller_tb extends Component {
   }
 
   // Instantiate the SDRAM controller black box
-  val ram = new sdram_controller(8,16)
+  val ram = new sdram_controller()
 
+  // Add all rtl dependencies to merged Verilog output
+  ram.addRTLPath("./sdram_controller_tb.v")
+  ram.addRTLPath("./rtl/sdram_controller.v")
+
+  // Registers to drive sdram_controller inputs
   val wr_data = Reg(Bits(16 bit)) init 0
-  val wr_enable = Reg(Bool) init False
-
-  val rd_addr = Reg (Bits (24 bit))         //input[HADDR_WIDTH - 1: 0] rd_addr;
-  val wr_addr = Reg (Bits (24 bit))         //input[HADDR_WIDTH - 1: 0] wr_addr;
-  val rd_data = Reg(Bits (16 bit))
+  val wr_enable = Reg(Bool) init False init False
+  val rd_addr = Reg (Bits (24 bit)) init 0        //input[HADDR_WIDTH - 1: 0] rd_addr;
+  val wr_addr = Reg (Bits (24 bit)) init 0        //input[HADDR_WIDTH - 1: 0] wr_addr;
   val rd_enable = Reg(Bool) init False
-  val rd_ready = Reg(Bool)
 
-  val busy = Reg(Bool)
+  // Registers to receive sdram_controller outputs
+  val rd_data = Reg(Bits(16 bit)) init 0
+  val rd_ready = Reg(Bool) init False
+  val busy = Reg(Bool) init False
+
   val rst_n = Reg(Bool) init False   // TODO: This should be connected to our global reset.
 
-  rd_addr := 0
-  wr_addr := 0
-  wr_data := 0
-  wr_enable := False
-  rd_enable := False
-  rst_n := False
-
-  // Connect all host side SDRAM signals to something
+  // Connect all host side SDRAM signals to the test bench
   ram.io.rd_addr := rd_addr
   ram.io.wr_addr := wr_addr
   ram.io.wr_data := wr_data
@@ -98,7 +86,11 @@ class sdram_controller_tb extends Component {
   ram.io.rd_enable := rd_enable
   ram.io.rst_n := rst_n
 
-  // Connect all SDRAM device signals to outside world
+  rd_data := ram.io.rd_data
+  rd_ready := ram.io.rd_ready
+  busy := ram.io.busy
+
+  // Connect all SDRAM device signals to outside world.
   io.DRAM_ADDR <> ram.io.addr
   io.DRAM_BA <> ram.io.bank_addr
   io.DRAM_DQ := ram.io.data
@@ -107,16 +99,25 @@ class sdram_controller_tb extends Component {
   io.DRAM_RAS_N <> ram.io.ras_n
   io.DRAM_CAS_N <> ram.io.cas_n
   io.DRAM_WE_N <> ram.io.we_n
-  io.DRAM_DQM(0) <> ram.io.data_mask_low     // TODO: These bits the right way around?
+  io.DRAM_DQM(0) <> ram.io.data_mask_low
   io.DRAM_DQM(1) <> ram.io.data_mask_high
 
+  // Suppress the "io_" prefix on module connection names in Verilog output.
   noIoPrefix()
+
+  // Test bench logic to go here.
+  rd_addr := 0
+  wr_addr := 0
+  wr_data := 0
+  wr_enable := False
+  rd_enable := False
+  rst_n := False
 }
 
 object Main {
   def main(args: Array[String]): Unit = {
     val report = SpinalVerilog(new sdram_controller_tb)
-    report.mergeRTLSource("mergeRTL") // merge all rtl sources into mergeRTL.vhd and mergeRTL.v file
+    report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.v file
     report.printPruned()
   }
 }
