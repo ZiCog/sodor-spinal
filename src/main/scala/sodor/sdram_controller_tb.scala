@@ -46,6 +46,7 @@ class sdram_controller() extends BlackBox {
 // Create the test bench top level and instantiate the SD RAM controller
 class sdram_controller_tb extends Component {
   val io = new Bundle {
+    val CLOCK_50 = in Bool
     val DRAM_ADDR = out Bits (13 bit)            // output [SDRADDR_WIDTH-1:0];
     val DRAM_BA = out Bits (2 bit)               //output [BANK_WIDTH-1:0]    bank_addr;
     val DRAM_DQ = inout Bits (16 bit)
@@ -56,6 +57,9 @@ class sdram_controller_tb extends Component {
     val DRAM_WE_N = out Bool
     val DRAM_DQM = out Bits (2 bits)
   }
+
+
+
 
   // Instantiate the SDRAM controller black box
   val ram = new sdram_controller()
