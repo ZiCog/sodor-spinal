@@ -22,6 +22,10 @@ This is my first ever non-trivial SpinalHDL design and my first ever attempt at 
 
 ### Status
 
+2019-05-13 : Added SDRAM module.
+
+2019-04-05 : Added memory module Memory.scala. This provides use of FPGA block RAMs with the picorv32 memory interface.
+
 2018-04-18 : Data and control paths completed. All instructions in place except FENCE, ECALL, EBREAK and the CS register stuff.
              Almost all control and data paths checked out with a test harness "sodor-sim.scala". 
 
@@ -120,4 +124,36 @@ And do the following :
 
 Normally, this must generate output file ```Sodor.v```.
 
+## Memory Module
+
+The Memory.scala module provides use of FPGA block RAM via the picrorv32 memory bus interface. Quartus at least synthesizes this to use block RAM correctly. 
+
+The memory verilog module is built along with sodo with:
+
+```sh
+    $ cd sodor-spinal
+    $ sbt "run-main sodor.SodorVerilog"
+```
+There is a memory test bench:
+
+```sh
+    $ cd sodor-spinal
+    $ sbt "run-main sodor.SodorMemory"
+```
+
+The Memory module is not currently used by Sodor but is working well with the picrrv32 core at 100MHz in the xoro project.
+
+## SDRAM Module
+
+The SDRAM controller is a Spinal black box wrapping the SDRAM controller in Verilog by stffrdhrn. See: https://github.com/stffrdhrn/sdram-controller 
+
+The SDRAM controller and a testbench for Quartus and the Teraasic DEO-Nano board are built from sdram_controller_tb.scala with:
+
+```sh
+    $ cd sodor-spinal
+    $ sbt "run-main sodor.SDRAMVerilog"
+```
+This produces a test bench for the SDRAM controller in quartus/sdram_controller_tb/sdram_controller_tb.v which can be built by Quartus with the project sdram_controller_tb.qpf in that same directory.
+
+Status: 2019-05-13 - Not yet run on actual hardware!
 
