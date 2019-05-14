@@ -59,14 +59,14 @@ class sdram_controller() extends BlackBox {
 }
 
 // Create the test bench top level and instantiate the SD RAM controller
-class sdram_controller_tb extends Component {
+class sdram_controller_tb extends Component{
   val io = new Bundle {
 
     //////////// CLOCK //////////
     val CLOCK_50 = in Bool
 
     //////////// LED //////////
-    // val LED = out Bits (8 bit)
+    val LED = out Bits (8 bit)
 
     //////////// KEY //////////
     // val KEY = in Bits (2 bit)
@@ -124,67 +124,89 @@ class sdram_controller_tb extends Component {
   pll.io.inclk0 := io.CLOCK_50
   clock_100 := pll.io.c0
 
-  // Instantiate the SDRAM controller black box
-  val ram = new sdram_controller()
+  // Configure a clock domain for the test bench, because we want to us "clock_100"
+  val myClockDomainConfig = ClockDomainConfig(
+    clockEdge = RISING,
+    resetKind = SYNC,
+    resetActiveLevel = HIGH
+  )
 
-  // Add all rtl dependencies to merged Verilog output
-  ram.addRTLPath("./sdram_controller_tb.v")
-  ram.addRTLPath("./rtl/sdram_controller.v")
+  val myReset = Reg (Bool) init False
+  myReset := False
+  val myClockDomain = ClockDomain(clock_100, myReset, config = myClockDomainConfig)
+  val myArea = new ClockingArea(myClockDomain) {
 
-  // Registers to drive sdram_controller inputs
-  val wr_data = Reg(Bits(16 bit)) init 0
-  val wr_enable = Reg(Bool) init False init False
-  val rd_addr = Reg (Bits (24 bit)) init 0        //input[HADDR_WIDTH - 1: 0] rd_addr;
-  val wr_addr = Reg (Bits (24 bit)) init 0        //input[HADDR_WIDTH - 1: 0] wr_addr;
-  val rd_enable = Reg(Bool) init False
 
-  // Registers to receive sdram_controller outputs
-  val rd_data = Reg(Bits(16 bit)) init 0
-  val rd_ready = Reg(Bool) init False
-  val busy = Reg(Bool) init False
+    // Instantiate the SDRAM controller black box
+    val ram = new sdram_controller()
 
-  val rst_n = Reg(Bool) init False   // TODO: This should be connected to our global reset.
+    // Add all rtl dependencies to merged Verilog output
+    ram.addRTLPath("./sdram_controller_tb.v")
+    ram.addRTLPath("./rtl/sdram_controller.v")
 
-  val data = Bits(16 bit)
+    // Registers to drive sdram_controller inputs
+    val wr_data = Reg(Bits(16 bit)) init 0
+    val wr_enable = Reg(Bool) init False init False
+    val rd_addr = Reg (Bits (24 bit)) init 0        //input[HADDR_WIDTH - 1: 0] rd_addr;
+    val wr_addr = Reg (Bits (24 bit)) init 0        //input[HADDR_WIDTH - 1: 0] wr_addr;
+    val rd_enable = Reg(Bool) init False
 
-  // Connect all host side SDRAM signals to the test bench
-  ram.io.rd_addr := rd_addr
-  ram.io.wr_addr := wr_addr
-  ram.io.wr_data := wr_data
-  ram.io.wr_enable := wr_enable
-  ram.io.rd_enable := rd_enable
-  ram.io.rst_n := rst_n
+    // Registers to receive sdram_controller outputs
+    val rd_data = Reg(Bits(16 bit)) init 0
+    val rd_ready = Reg(Bool) init False
+    val busy = Reg(Bool) init False
 
-  rd_data := ram.io.rd_data
-  rd_ready := ram.io.rd_ready
-  busy := ram.io.busy
+    val rst_n = Reg(Bool) init False   // TODO: This should be connected to our global reset.
 
-  // Connect all SDRAM device signals to outside world.
-  io.DRAM_CLK <> clock_100
-  io.DRAM_ADDR <> ram.io.addr
-  io.DRAM_BA <> ram.io.bank_addr
+    val data = Bits(16 bit)
 
-  // WARNING! 
-  io.DRAM_DQ := ram.io.data
+    // Connect all host side SDRAM signals to the test bench
+    ram.io.rd_addr := rd_addr
+    ram.io.wr_addr := wr_addr
+    ram.io.wr_data := wr_data
+    ram.io.wr_enable := wr_enable
+    ram.io.rd_enable := rd_enable
+    ram.io.rst_n := rst_n
 
-  io.DRAM_CKE <> ram.io.clock_enable
-  io.DRAM_CS_N <> ram.io.cs_n
-  io.DRAM_RAS_N <> ram.io.ras_n
-  io.DRAM_CAS_N <> ram.io.cas_n
-  io.DRAM_WE_N <> ram.io.we_n
-  io.DRAM_DQM(0) <> ram.io.data_mask_low
-  io.DRAM_DQM(1) <> ram.io.data_mask_high
+    rd_data := ram.io.rd_data
+    rd_ready := ram.io.rd_ready
+    busy := ram.io.busy
 
-  // Suppress the "io_" prefix on module connection names in Verilog output.
-  noIoPrefix()
+    // Connect all SDRAM device signals to outside world.
+    io.DRAM_CLK <> clock_100
+    io.DRAM_ADDR <> ram.io.addr
+    io.DRAM_BA <> ram.io.bank_addr
 
-  // Test bench logic to go here.
-  rd_addr := 0
-  wr_addr := 0
-  wr_data := 0
-  wr_enable := False
-  rd_enable := False
-  rst_n := False
+    // WARNING! 
+    io.DRAM_DQ := ram.io.data
+
+    io.DRAM_CKE <> ram.io.clock_enable
+    io.DRAM_CS_N <> ram.io.cs_n
+    io.DRAM_RAS_N <> ram.io.ras_n
+    io.DRAM_CAS_N <> ram.io.cas_n
+    io.DRAM_WE_N <> ram.io.we_n
+    io.DRAM_DQM(0) <> ram.io.data_mask_low
+    io.DRAM_DQM(1) <> ram.io.data_mask_high
+
+    // Suppress the "io_" prefix on module connection names in Verilog output.
+    noIoPrefix()
+
+    // Test bench logic to go here.
+
+    val count = Reg(UInt(64 bit)) init 85
+    val led = Reg(Bits(8 bit)) init 0
+    led := count.asBits(31 downto 24)
+    io.LED := led
+    count := count + 1
+
+
+    rd_addr := 0
+    wr_addr := 0
+    wr_data := 0
+    wr_enable := False
+    rd_enable := False
+    rst_n := False
+  }
 }
 
 object SDRAMVerilog {
