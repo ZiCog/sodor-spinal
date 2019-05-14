@@ -124,6 +124,8 @@ class sdram_controller_tb extends Component {
 
   val rst_n = Reg(Bool) init False   // TODO: This should be connected to our global reset.
 
+  val data = Bits(16 bit)
+
   // Connect all host side SDRAM signals to the test bench
   ram.io.rd_addr := rd_addr
   ram.io.wr_addr := wr_addr
@@ -140,7 +142,10 @@ class sdram_controller_tb extends Component {
   io.DRAM_CLK <> io.CLOCK_50
   io.DRAM_ADDR <> ram.io.addr
   io.DRAM_BA <> ram.io.bank_addr
+
+  // WARNING! 
   io.DRAM_DQ := ram.io.data
+
   io.DRAM_CKE <> ram.io.clock_enable
   io.DRAM_CS_N <> ram.io.cs_n
   io.DRAM_RAS_N <> ram.io.ras_n
@@ -166,5 +171,22 @@ object SDRAMVerilog {
     val report = SpinalVerilog(new sdram_controller_tb)
     report.mergeRTLSource("quartus/sdram_controller_tb/sdram_controller_tb") // Merge all rtl sources into sdram_controller_tb.v file
     report.printPruned()
+
+    println("")
+    println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    println("!!                                                         !!")
+    println("!! WARNING!                                                !!")
+    println("!!                                                         !!")
+    println("!! Spinal cannot hadle bidirectional signals               !!")
+    println("!! Be sure to edit sdram_controller_tb.v to make this work !!")
+    println("!! Hint: Change:                                           !!")
+    println("!!          .data(data),                                   !!")
+    println("!!       To:                                               !!")
+    println("!!          .data(DRAM_DQ),                                !!")
+    println("!!                                                         !!")
+    println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    println("")
+
+
   }
 }
