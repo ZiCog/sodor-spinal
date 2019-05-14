@@ -2,6 +2,21 @@ package sodor
 
 import spinal.core._
 
+// Black box that wraps a Quartus pll_sys phased locked loop.
+class pll_sys() extends BlackBox {
+  // Define io of the pll_sys Verilog module
+  val io = new Bundle {
+    val inclk0 = in Bool
+    val c0 = out Bool
+    val c1 = out Bool
+    val c2 = out Bool
+    val locked = out Bool
+  }
+
+  // Suppress the "io_" prefix on module connection names in the Verilog output.
+  noIoPrefix()
+}
+
 // Black box that wraps the sdram_controller.v
 // taken from https://github.com/stffrdhrn/sdram-controller
 class sdram_controller() extends BlackBox {
@@ -103,6 +118,12 @@ class sdram_controller_tb extends Component {
     //input                [1:0]              GPIO_1_IN
   }
 
+  // Instantiate the PLL for the SDRAM controller 100MHz clock
+  val pll = new pll_sys() 
+  val clock_100 = Bool
+  pll.io.inclk0 := io.CLOCK_50
+  clock_100 := pll.io.c0
+
   // Instantiate the SDRAM controller black box
   val ram = new sdram_controller()
 
@@ -139,7 +160,7 @@ class sdram_controller_tb extends Component {
   busy := ram.io.busy
 
   // Connect all SDRAM device signals to outside world.
-  io.DRAM_CLK <> io.CLOCK_50
+  io.DRAM_CLK <> clock_100
   io.DRAM_ADDR <> ram.io.addr
   io.DRAM_BA <> ram.io.bank_addr
 
@@ -186,7 +207,5 @@ object SDRAMVerilog {
     println("!!                                                         !!")
     println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     println("")
-
-
   }
 }
