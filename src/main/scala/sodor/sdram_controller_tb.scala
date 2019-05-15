@@ -176,7 +176,7 @@ class sdram_controller_tb extends Component{
     busy := ram.io.busy
 
     // Connect all SDRAM device signals to outside world.
-    io.DRAM_CLK <> clock_100
+    io.DRAM_CLK <> coreClockDomain.clock
     io.DRAM_ADDR <> ram.io.addr
     io.DRAM_BA <> ram.io.bank_addr
 
