@@ -1,6 +1,7 @@
 package sodor
 
 import spinal.core._
+import spinal.lib._
 
 // Black box that wraps a Quartus pll_sys phased locked loop.
 class pll_sys() extends BlackBox {
@@ -69,8 +70,7 @@ class sdram_controller_tb extends Component{
     val LED = out Bits (8 bit)
 
     //////////// KEY //////////
-    // val KEY = in Bits (2 bit)
-
+    val KEY = in Bits (2 bit)
 
     //////////// SW //////////
     // val SW = in Bits (4 bit)
@@ -124,18 +124,21 @@ class sdram_controller_tb extends Component{
   pll.io.inclk0 := io.CLOCK_50
   clock_100 := pll.io.c0
 
-  // Configure a clock domain for the test bench, because we want to us "clock_100"
-  val myClockDomainConfig = ClockDomainConfig(
-    clockEdge = RISING,
-    resetKind = SYNC,
-    resetActiveLevel = HIGH
+  // Create a new clock domain named 'core' to use the 100MHz clock from the PLL
+  val coreClockDomain = ClockDomain.internal (
+    name = "core",
+    frequency = FixedFrequency(100 MHz)  // This frequency specification can be used
+  )              
+
+  // Drive clock and reset signals of the core clock domain previously created
+  coreClockDomain.clock := pll.io.c0
+  coreClockDomain.reset := ResetCtrl.asyncAssertSyncDeassert(
+    input = !io.KEY(0) || !pll.io.locked,                 // FIXME:
+    clockDomain = coreClockDomain
   )
 
-  val myReset = Reg (Bool) init False
-  myReset := False
-  val myClockDomain = ClockDomain(clock_100, myReset, config = myClockDomainConfig)
-  val myArea = new ClockingArea(myClockDomain) {
-
+  // Create a clocking area which will be under the effect of the core clock domain
+  val core = new ClockingArea(coreClockDomain) {
 
     // Instantiate the SDRAM controller black box
     val ram = new sdram_controller()
@@ -166,7 +169,7 @@ class sdram_controller_tb extends Component{
     ram.io.wr_data := wr_data
     ram.io.wr_enable := wr_enable
     ram.io.rd_enable := rd_enable
-    ram.io.rst_n := rst_n
+    ram.io.rst_n := coreClockDomain.reset              // rst_n  FIXME !!!!! <<<<<<<
 
     rd_data := ram.io.rd_data
     rd_ready := ram.io.rd_ready
