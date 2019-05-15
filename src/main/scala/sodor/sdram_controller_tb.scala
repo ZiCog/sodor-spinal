@@ -2,6 +2,7 @@ package sodor
 
 import spinal.core._
 import spinal.lib._
+import spinal.lib.fsm._
 
 // Black box that wraps a Quartus pll_sys phased locked loop.
 class pll_sys() extends BlackBox {
@@ -120,9 +121,7 @@ class sdram_controller_tb extends Component{
 
   // Instantiate the PLL for the SDRAM controller 100MHz clock
   val pll = new pll_sys() 
-  val clock_100 = Bool
   pll.io.inclk0 := io.CLOCK_50
-  clock_100 := pll.io.c0
 
   // Create a new clock domain named 'core' to use the 100MHz clock from the PLL
   val coreClockDomain = ClockDomain.internal (
@@ -157,11 +156,8 @@ class sdram_controller_tb extends Component{
     // Registers to receive sdram_controller outputs
     val rd_data = Reg(Bits(16 bit)) init 0
     val rd_ready = Reg(Bool) init False
-    val busy = Reg(Bool) init False
 
-    val rst_n = Reg(Bool) init False   // TODO: This should be connected to our global reset.
-
-    val data = Bits(16 bit)
+    val data = Bits(16 bit) // FIXME What is this for?
 
     // Connect all host side SDRAM signals to the test bench
     ram.io.rd_addr := rd_addr
@@ -169,18 +165,17 @@ class sdram_controller_tb extends Component{
     ram.io.wr_data := wr_data
     ram.io.wr_enable := wr_enable
     ram.io.rd_enable := rd_enable
-    ram.io.rst_n := coreClockDomain.reset              // rst_n  FIXME !!!!! <<<<<<<
+    ram.io.rst_n := coreClockDomain.reset
 
     rd_data := ram.io.rd_data
     rd_ready := ram.io.rd_ready
-    busy := ram.io.busy
 
     // Connect all SDRAM device signals to outside world.
     io.DRAM_CLK <> coreClockDomain.clock
     io.DRAM_ADDR <> ram.io.addr
     io.DRAM_BA <> ram.io.bank_addr
 
-    // WARNING! 
+    // WARNING! Spinal cannot hadle bidirectional signals. See below. 
     io.DRAM_DQ := ram.io.data
 
     io.DRAM_CKE <> ram.io.clock_enable
@@ -196,19 +191,56 @@ class sdram_controller_tb extends Component{
 
     // Test bench logic to go here.
 
-    val count = Reg(UInt(64 bit)) init 85
-    val led = Reg(Bits(8 bit)) init 0
-    led := count.asBits(31 downto 24)
-    io.LED := led
+    val count = Reg(UInt(64 bit)) init 0
+    io.LED := count.asBits(31 downto 24)
     count := count + 1
 
+    val SDRAMReadWriteFSM = new StateMachine {
+      val stateIdle = new State with EntryPoint
+      val stateWrite = new State
+      val stateRead = new State
+      val stateWaitReadReady = new State
 
-    rd_addr := 0
-    wr_addr := 0
-    wr_data := 0
-    wr_enable := False
-    rd_enable := False
-    rst_n := False
+      stateIdle
+        .whenIsActive {
+          when (!ram.io.busy) {
+            goto(stateWrite)
+          }
+        }
+      stateWrite
+        .onEntry {
+          wr_addr := 333
+          wr_data := 444
+          wr_enable := True
+        }
+        .whenIsActive {
+          when(ram.io.busy){
+            goto(stateRead)
+          }
+        }
+        .onExit {
+            wr_enable := False
+        }
+      stateRead
+        .onEntry {
+          rd_addr := 333
+          rd_enable := True
+        }
+        .whenIsActive {
+          when(ram.io.busy) {
+            goto(stateWaitReadReady)
+          }
+        }
+        .onExit {
+            rd_enable := False
+        }
+      stateWaitReadReady
+        .whenIsActive {
+          when(ram.io.rd_ready) {
+            goto(stateIdle)
+          }
+        }
+    }
   }
 }
 
