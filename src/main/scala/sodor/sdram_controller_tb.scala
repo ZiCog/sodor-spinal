@@ -83,19 +83,25 @@ class sdram_controller_tb extends Component{
     val led = Reg(Bits (8 bit)) init 0
     io.LED := rd_data(7 downto 0)
 
-    val sdramAddress = Reg(UInt(24 bit)) init U"101010101010101010101010"
-    val sdramData = Reg(UInt(16 bit)) init U"1100110011001100"
+    val sdramAddress = Reg(UInt(24 bit)) init 0
+    val sdramData = Reg(UInt(16 bit)) init 0
+
+    when (count > 10000000) {
+      sdramAddress := sdramAddress + 1
+      sdramData := sdramData + 1
+      count := 0
+    }
+
 
     val SDRAMReadWriteFSM = new StateMachine {
       val stateIdle = new State with EntryPoint
       val stateWrite = new State
+      val stateWaitWriteBusy = new State
       val stateRead = new State
       val stateWaitReadReady = new State
 
       stateIdle
         .onEntry {
-          sdramAddress := sdramAddress + 1
-          sdramData := U"1110011111100111"
         }
         .whenIsActive {
           when (!io.sdram.busy) {
@@ -110,11 +116,17 @@ class sdram_controller_tb extends Component{
         }
         .whenIsActive {
           when(io.sdram.busy){
-            goto(stateRead)
+            goto(stateWaitWriteBusy)
           }
         }
         .onExit {
             wr_enable := False
+        }
+      stateWaitWriteBusy
+        .whenIsActive {
+          when(!io.sdram.busy){
+            goto(stateRead)
+          }
         }
       stateRead
         .onEntry {
@@ -122,7 +134,7 @@ class sdram_controller_tb extends Component{
           rd_enable := True
         }
         .whenIsActive {
-          when(!io.sdram.busy) {
+          when(io.sdram.busy) {
             goto(stateWaitReadReady)
           }
         }
