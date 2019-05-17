@@ -80,14 +80,21 @@ class sdram_controller_tb extends Component{
     val count = Reg(UInt(64 bit)) init 0
     count := count + 1
 
+    val sdramAddress = Reg(UInt(24 bit)) init 0
+    val sdramWriteData = Reg(UInt(16 bit)) init 0
+    val sdramCycles = Reg(UInt (4 bits)) init 0
+
     val led = Reg(Bits (8 bit)) init 0
     io.LED := rd_data(15 downto 8)
 
-    val sdramAddress = Reg(UInt(24 bit)) init 0
-    val sdramWriteData = Reg(UInt(16 bit)) init 0
-
     def hash(n: UInt): UInt = {
       return n * 27146105
+    }
+
+    when ((sdramAddress === 0).rise) {
+      when (sdramCycles < 4) {
+        sdramCycles := sdramCycles + 1
+      }
     }
 
     val SDRAMReadWriteFSM = new StateMachine {
@@ -105,7 +112,11 @@ class sdram_controller_tb extends Component{
         }
         .whenIsActive {
           when (!io.sdram.busy) {
-            goto(stateWrite)
+            when (sdramCycles < U(1)) {
+              goto(stateWrite)
+            } otherwise {
+              goto(stateRead)
+            }
           }
         }
 
