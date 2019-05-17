@@ -86,6 +86,10 @@ class sdram_controller_tb extends Component{
     val sdramAddress = Reg(UInt(24 bit)) init 0
     val sdramWriteData = Reg(UInt(16 bit)) init 0
 
+    def hash(n: UInt): UInt = {
+      return (n * 27146105) >> 24
+    }
+
     val SDRAMReadWriteFSM = new StateMachine {
       val stateIdle = new State with EntryPoint
       val stateWrite = new State
@@ -97,7 +101,7 @@ class sdram_controller_tb extends Component{
       stateIdle
         .onEntry {
           sdramAddress := sdramAddress + 1
-          sdramWriteData := sdramWriteData + 1
+          sdramWriteData := hash(sdramAddress + 1)(15 downto 0)
         }
         .whenIsActive {
           when (!io.sdram.busy) {
@@ -142,7 +146,7 @@ class sdram_controller_tb extends Component{
       stateWaitReadReady
         .whenIsActive {
           when(io.sdram.rd_ready) {
-            when (io.sdram.rd_data === sdramWriteData.asBits) {
+            when (io.sdram.rd_data === hash(sdramAddress).asBits(15 downto 0)) {
               rd_data := io.sdram.rd_data
               goto(stateIdle)
             } otherwise {
