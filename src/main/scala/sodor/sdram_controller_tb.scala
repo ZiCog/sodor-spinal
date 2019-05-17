@@ -81,17 +81,10 @@ class sdram_controller_tb extends Component{
     count := count + 1
 
     val led = Reg(Bits (8 bit)) init 0
-    io.LED := rd_data(7 downto 0)
+    io.LED := rd_data(15 downto 8)
 
     val sdramAddress = Reg(UInt(24 bit)) init 0
-    val sdramData = Reg(UInt(16 bit)) init 0
-
-    when (count > 10000000) {
-      sdramAddress := sdramAddress + 1
-      sdramData := sdramData + 1
-      count := 0
-    }
-
+    val sdramWriteData = Reg(UInt(16 bit)) init 0
 
     val SDRAMReadWriteFSM = new StateMachine {
       val stateIdle = new State with EntryPoint
@@ -99,23 +92,27 @@ class sdram_controller_tb extends Component{
       val stateWaitWriteBusy = new State
       val stateRead = new State
       val stateWaitReadReady = new State
+      val stateAbend = new State
 
       stateIdle
         .onEntry {
+          sdramAddress := sdramAddress + 1
+          sdramWriteData := sdramWriteData + 1
         }
         .whenIsActive {
           when (!io.sdram.busy) {
             goto(stateWrite)
           }
-        } 
+        }
+
       stateWrite
         .onEntry {
           wr_addr := sdramAddress.asBits
-          wr_data :=  sdramData.asBits
+          wr_data :=  sdramWriteData.asBits
           wr_enable := True
         }
         .whenIsActive {
-          when(io.sdram.busy){
+          when(io.sdram.busy) {
             goto(stateWaitWriteBusy)
           }
         }
@@ -124,10 +121,11 @@ class sdram_controller_tb extends Component{
         }
       stateWaitWriteBusy
         .whenIsActive {
-          when(!io.sdram.busy){
+          when(!io.sdram.busy) {
             goto(stateRead)
           }
         }
+
       stateRead
         .onEntry {
           rd_addr := sdramAddress.asBits
@@ -142,15 +140,19 @@ class sdram_controller_tb extends Component{
           rd_enable := False
         }
       stateWaitReadReady
-        .onEntry {
-        }
         .whenIsActive {
-          rd_data := io.sdram.rd_data (15 downto 0)
           when(io.sdram.rd_ready) {
-            goto(stateIdle)
+            when (io.sdram.rd_data === sdramWriteData.asBits) {
+              rd_data := io.sdram.rd_data
+              goto(stateIdle)
+            } otherwise {
+              goto(stateAbend)
+            }
           }
         }
-        .onExit {
+      stateAbend
+        .onEntry {
+          rd_data := B"1010101010101010"
         }
     }
   }
