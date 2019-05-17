@@ -87,7 +87,7 @@ class sdram_controller_tb extends Component{
     val sdramWriteData = Reg(UInt(16 bit)) init 0
 
     def hash(n: UInt): UInt = {
-      return (n * 27146105) >> 24
+      return n * 27146105
     }
 
     val SDRAMReadWriteFSM = new StateMachine {
