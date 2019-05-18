@@ -4,14 +4,10 @@ import spinal.core._
 import spinal.lib._
 import spinal.lib.fsm._
 
-
-// Create the test bench top level and instantiate the SD RAM controller
-class sdram_controller_tb extends Component{
+class sdram_controller_tb extends Component {
   val io = new Bundle {
     //////////// Clock and reset ///
     val CLOCK_50 = in Bool
-    val CLOCK_100 = out Bool
-    val rst_n = out Bool
 
     //////////// Leds //////////////
     val LED = out Bits (8 bit)
@@ -19,23 +15,23 @@ class sdram_controller_tb extends Component{
     //////////// Keys //////////
     val KEY = in Bits (2 bit)
 
-    //////////// SDRAM host bus ////
-    val sdram = new Bundle {
-      val rd_addr = out Bits (24 bit)
-      val wr_addr = out Bits (24 bit)
-      val wr_data = out Bits (16 bit)
-      val wr_enable = out Bool
-      val rd_enable = out Bool
-      val rd_data = in Bits (16 bit)
-      val rd_ready = in Bool
-      val busy = in Bool
-    }
+    //////////// SDRAM //////////
+    val DRAM_ADDR = out Bits (13 bit)
+    val DRAM_BA = out Bits (2 bit)
+    val DRAM_CAS_N = out Bool
+    val DRAM_CKE = out Bool
+    val DRAM_CLK = out Bool
+    val DRAM_CS_N = out Bool
+    val DRAM_DQ = inout (Analog(Bits (16 bit))) // Bidirectional data bus
+    val DRAM_DQM = out Bits (2 bit)
+    val DRAM_RAS_N = out Bool
+    val DRAM_WE_N = out Bool
   }
 
   // Instantiate a PLL for the SDRAM controller 100MHz clock
   val pll = new pll_sys() 
   pll.io.inclk0 := io.CLOCK_50
-  io.CLOCK_100 := pll.io.c0
+  io.DRAM_CLK := pll.io.c0
 
   // Create a new clock domain named 'core' to use the 100MHz clock from the PLL
   val coreClockDomain = ClockDomain.internal (
@@ -53,6 +49,21 @@ class sdram_controller_tb extends Component{
   // Create a clocking area which will be under the effect of the core clock domain
   val core = new ClockingArea(coreClockDomain) {
 
+    // Instantiate the SDRAM blackbox
+    val sdram_bb = new sdram_controller()
+
+    // Connect all the SDRAM signals
+    io.DRAM_ADDR   <> sdram_bb.io.addr
+    io.DRAM_BA     <> sdram_bb.io.bank_addr
+    io.DRAM_DQ     := sdram_bb.io.data
+    io.DRAM_CKE    <> sdram_bb.io.clock_enable
+    io.DRAM_CS_N   <> sdram_bb.io.cs_n
+    io.DRAM_RAS_N  <> sdram_bb.io.ras_n
+    io.DRAM_CAS_N  <> sdram_bb.io.cas_n
+    io.DRAM_WE_N   <> sdram_bb.io.we_n 
+    io.DRAM_DQM(0) <> sdram_bb.io.data_mask_low
+    io.DRAM_DQM(1) <> sdram_bb.io.data_mask_high
+
     // Registers to drive sdram_controller inputs
     val wr_data = Reg(Bits(16 bit)) init 0
     val wr_enable = Reg(Bool) init False
@@ -62,29 +73,23 @@ class sdram_controller_tb extends Component{
 
     // Registers to receive sdram_controller outputs
     val rd_data = Reg(Bits(16 bit)) init 0
-    val rd_ready = Reg(Bool) init False
 
     // Connect all host side SDRAM signals to the test bench
-    io.sdram.rd_addr := rd_addr
-    io.sdram.wr_addr := wr_addr
-    io.sdram.wr_data := wr_data
-    io.sdram.wr_enable := wr_enable
-    io.sdram.rd_enable := rd_enable
-    io.rst_n := !coreClockDomain.reset
+    sdram_bb.io.rd_addr := rd_addr
+    sdram_bb.io.wr_addr := wr_addr
+    sdram_bb.io.wr_data := wr_data
+    sdram_bb.io.wr_enable := wr_enable
+    sdram_bb.io.rd_enable := rd_enable
+    sdram_bb.io.rst_n := !coreClockDomain.reset
 
     // Suppress the "io_" prefix on module connection names in Verilog output.
     noIoPrefix()
 
     // Test bench logic to go here.
-
-    val count = Reg(UInt(64 bit)) init 0
-    count := count + 1
-
     val sdramAddress = Reg(UInt(24 bit)) init 0
     val sdramWriteData = Reg(UInt(16 bit)) init 0
     val sdramCycles = Reg(UInt (4 bits)) init 0
 
-    val led = Reg(Bits (8 bit)) init 0
     io.LED := rd_data(15 downto 8)
 
     def hash(n: UInt): UInt = {
@@ -111,7 +116,7 @@ class sdram_controller_tb extends Component{
           sdramWriteData := hash(sdramAddress + 1)(15 downto 0)
         }
         .whenIsActive {
-          when (!io.sdram.busy) {
+          when (!sdram_bb.io.busy) {
             when (sdramCycles < U(1)) {
               goto(stateWrite)
             } otherwise {
@@ -127,7 +132,7 @@ class sdram_controller_tb extends Component{
           wr_enable := True
         }
         .whenIsActive {
-          when(io.sdram.busy) {
+          when(sdram_bb.io.busy) {
             goto(stateWaitWriteBusy)
           }
         }
@@ -136,7 +141,7 @@ class sdram_controller_tb extends Component{
         }
       stateWaitWriteBusy
         .whenIsActive {
-          when(!io.sdram.busy) {
+          when(!sdram_bb.io.busy) {
             goto(stateRead)
           }
         }
@@ -147,7 +152,7 @@ class sdram_controller_tb extends Component{
           rd_enable := True
         }
         .whenIsActive {
-          when(io.sdram.busy) {
+          when(sdram_bb.io.busy) {
             goto(stateWaitReadReady)
           }
         }
@@ -156,9 +161,9 @@ class sdram_controller_tb extends Component{
         }
       stateWaitReadReady
         .whenIsActive {
-          when(io.sdram.rd_ready) {
-            when (io.sdram.rd_data === hash(sdramAddress).asBits(15 downto 0)) {
-              rd_data := io.sdram.rd_data
+          when(sdram_bb.io.rd_ready) {
+            when (sdram_bb.io.rd_data === hash(sdramAddress).asBits(15 downto 0)) {
+              rd_data := sdram_bb.io.rd_data
               goto(stateIdle)
             } otherwise {
               goto(stateAbend)
