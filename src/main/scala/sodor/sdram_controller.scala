@@ -19,12 +19,12 @@ class sdram_controller() extends BlackBox {
     val clk = in Bool
 
     // HOST interface.
-    val wr_addr = in Bits (24 bit)       //input[HADDR_WIDTH - 1: 0] wr_addr;
-    val wr_data = in Bits(16 bit)
+    val wr_addr = in Bits (24 bits)       //input[HADDR_WIDTH - 1: 0] wr_addr;
+    val wr_data = in Bits(16 bits)
     val wr_enable = in Bool
 
-    val rd_addr = in Bits (24 bit)       //input[HADDR_WIDTH - 1: 0] rd_addr;
-    val rd_data = out Bits (16 bit)
+    val rd_addr = in Bits (24 bits)       //input[HADDR_WIDTH - 1: 0] rd_addr;
+    val rd_data = out Bits (16 bits)
     val rd_enable = in Bool
     val rd_ready = out Bool
 
@@ -32,9 +32,9 @@ class sdram_controller() extends BlackBox {
     val rst_n = in Bool
 
     // SDRAM Device Interface.
-    val addr = out Bits (13 bit)                  // [SDRADDR_WIDTH-1:0];
-    val bank_addr = out Bits (2 bit)                   //output [BANK_WIDTH-1:0]    bank_addr;
-    val data = inout Bits (16 bit)
+    val addr = out Bits (13 bits)                  // [SDRADDR_WIDTH-1:0];
+    val bank_addr = out Bits (2 bits)                   //output [BANK_WIDTH-1:0]    bank_addr;
+    val data = inout (Analog(Bits (16 bits)))
     val clock_enable = out Bool
     val cs_n = out Bool
     val ras_n = out Bool
