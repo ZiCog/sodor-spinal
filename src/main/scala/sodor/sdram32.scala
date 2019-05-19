@@ -4,7 +4,7 @@ import spinal.core._
 import spinal.lib._
 import spinal.lib.fsm._
 
-class sdram32 (width : Int, depth : Int)   extends Component {
+class Sdram32 (width : Int, depth : Int)   extends Component {
   val io = new Bundle {
     // picorv32 host bus interface
     val host = new Bundle {
@@ -126,7 +126,7 @@ class sdram32 (width : Int, depth : Int)   extends Component {
 
 object sdram32Verilog {
   def main(args: Array[String]): Unit = {
-    val report = SpinalVerilog(new sdram32(32, 16 * 1024 * 1024))
+    val report = SpinalVerilog(new Sdram32(32, 16 * 1024 * 1024))
     report.mergeRTLSource("quartus/sdram_controller_tb/sdram32") // Merge all rtl sources into sdram32.v file
     report.printPruned()
   }
