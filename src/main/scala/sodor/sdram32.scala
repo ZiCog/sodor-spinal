@@ -51,48 +51,65 @@ class sdram32 (width : Int, depth : Int)   extends Component {
   io.sdram.wr_enable := False
   io.sdram.rd_enable := False
 
+  val dataHigh = Reg (Bits (16 bit)) init 0
 
   val fsm = new StateMachine {
-    val stateA = new State with EntryPoint
-    val stateB = new State
-    val stateC = new State
-    val stateD = new State
-    val stateE = new State
-    val stateF = new State
-
-    stateA
-      .onEntry {
+    val stateIdle = new State with EntryPoint
+    val stateReadHigh = new State
+    val stateRead1 = new State
+    val stateWriteHigh = new State
+    always {
+      when (!io.host.enable) {
+        goto(stateIdle)
       }
-      .whenIsActive {
-      }
-
-    stateB
-      .onEntry {
-      }
-      .whenIsActive {
-      }
-      .onExit {
-      }
-    stateC
-      .onEntry {
-      }
-      .whenIsActive {
-      }
-      .onExit {
-      }
-    stateD
-      .onEntry {
-      }
-      .whenIsActive {
-      }
-      .onExit {
-      }
-    stateE
-      .whenIsActive {
-      }
-    stateF
-      .onEntry {
     }
+
+    stateIdle
+      .onEntry {
+        io.host.mem_rdata := 0
+        io.host.mem_ready := False
+        io.sdram.wr_enable := False
+        io.sdram.rd_enable := False
+      }
+      .whenIsActive {
+        when (io.host.enable & io.host.mem_valid) {
+          when (io.host.mem_wstrb =/= 0) {
+            when (!io.sdram.busy) {
+              // Write cycle: Save high word and write low word to SDRAM.
+              io.sdram.wr_data := io.host.mem_wdata.asBits(15 downto 0)
+              io.sdram.wr_addr := io.host.mem_addr.asBits(15 downto 0)   // FIXME: word32 or word16 address?
+              io.sdram.wr_enable := True
+              goto(stateWriteHigh)
+            }
+          } otherwise {
+            // A Read cycle
+            dataHigh := io.host.mem_wdata.asBits(31 downto 16)
+            goto(stateReadHigh)
+          }
+        }
+      }
+
+    stateReadHigh
+      .onEntry {
+      }
+      .whenIsActive {
+      }
+      .onExit {
+      }
+    stateWriteHigh
+      .onEntry {
+      }
+      .whenIsActive {
+          when (!io.sdram.busy) {
+            // Write cycle: High word
+            io.sdram.wr_data := io.host.mem_wdata.asBits(31 downto 16)
+            io.sdram.wr_addr := (io.host.mem_addr + 1).asBits(15 downto 0)   // FIXME: word32 or word16 address?
+            goto(stateIdle)
+          }
+      }
+      .onExit {
+        io.host.mem_ready := True
+      }
   }
 }
 
