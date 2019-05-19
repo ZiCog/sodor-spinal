@@ -133,7 +133,7 @@ class sdram_controller_tb extends Component {
         }
         .whenIsActive {
           when(sdram.io.busy) {
-            goto(stateWaitWriteBusy)
+            goto (stateWaitWriteBusy)
           }
         }
         .onExit {
@@ -142,7 +142,7 @@ class sdram_controller_tb extends Component {
       stateWaitWriteBusy
         .whenIsActive {
           when(!sdram.io.busy) {
-            goto(stateRead)
+            goto (stateRead)
           }
         }
 
@@ -153,7 +153,7 @@ class sdram_controller_tb extends Component {
         }
         .whenIsActive {
           when(sdram.io.busy) {
-            goto(stateWaitReadReady)
+            goto (stateWaitReadReady)
           }
         }
         .onExit {
@@ -162,11 +162,11 @@ class sdram_controller_tb extends Component {
       stateWaitReadReady
         .whenIsActive {
           when(sdram.io.rd_ready) {
-            when (sdram.io.rd_data === hash(address).asBits(15 downto 0)) {
+            when (sdram.io.rd_data === hash(address).asBits(15 downto 0) ^ !io.KEY(1)) {
               rd_data := sdram.io.rd_data
-              goto(stateIdle)
+              goto (stateIdle)
             } otherwise {
-              goto(stateAbend)
+              goto (stateAbend)
             }
           }
         }
