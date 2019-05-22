@@ -33,94 +33,136 @@ class Sdram32 (width : Int, depth : Int)   extends Component {
     }
   }
 
-  io.host.mem_rdata := 0 
-  io.host.mem_ready := False
+  val rd_addr = Reg(Bits (24 bit)) init 0
+  val rd_enable = Reg(Bool) init False
 
-  io.sdram.rd_addr := 0
-  io.sdram.wr_addr := 0
-  io.sdram.wr_data := 0
-  io.sdram.wr_enable := False
-  io.sdram.rd_enable := False
+  io.sdram.wr_addr := 0   // FIXME: We need this?
+  rd_addr := 0   // FIXME: We need this?
+  rd_enable := False    // FIXME: We need this?
+
+  io.sdram.rd_addr := rd_addr
+  io.sdram.rd_enable := rd_enable
+
+  val rdata = Reg (SInt(width bits)) init 0
+  val ready = Bool
+  ready := False
+  val request = Bool
+  val done = Reg(Bool) init False
+  request := io.host.enable & io.host.mem_valid
+
+  rdata := 0    // FIXME: We need this?
 
   val readDataLow = Reg (Bits (16 bit)) init 0
 
-  val fsm = new StateMachine {
-    val stateWaitHostCommand = new State with EntryPoint
-    val stateWaitReadLowReady = new State
-    val stateWaitReadHighReady = new State
-    val stateWaitWriteLowReady = new State
+  io.sdram.wr_enable := False
+  io.sdram.wr_data := 0
+
+  val SDRAMReadWriteFSM = new StateMachine {
+    val stateIdle = new State with EntryPoint
+    val stateWriteLow = new State
+    val stateWaitWriteLowBusy = new State
+    val stateWriteHigh= new State
+    val stateWaitWriteHighBusy = new State
+    val stateRead = new State
+    val stateWaitReadReady = new State
+
     always {
-      when (!io.host.enable) {
-        io.host.mem_rdata := 0
-        io.host.mem_ready := False
-        goto(stateWaitHostCommand)
+      when (!(io.host.enable & io.host.mem_valid)) {
+        io.sdram.wr_addr := 0
+        rd_enable := False
+        ready := False
+        goto(stateIdle)
       }
     }
-
-    stateWaitHostCommand
-      .onEntry {
-        io.host.mem_rdata := 0
-        io.host.mem_ready := False
-        io.sdram.wr_enable := False
-        io.sdram.rd_enable := False
-      }
+    stateIdle
       .whenIsActive {
-        when (io.host.enable & io.host.mem_valid & !io.sdram.busy) {
+        when (!io.sdram.busy & (io.host.enable & io.host.mem_valid)) {
           when (io.host.mem_wstrb =/= 0) {
-            // Initiate write low word.
-            io.sdram.wr_addr := io.host.mem_addr.asBits(23 downto 0)   // FIXME: word32 or word16 address?
-            io.sdram.wr_data := io.host.mem_wdata.asBits(15 downto 0)
+            io.sdram.wr_addr := io.host.mem_addr.asBits(23 downto 0)
+            io.sdram.wr_data :=  io.host.mem_wdata.asBits.asBits(15 downto 0)
             io.sdram.wr_enable := True
-            goto(stateWaitWriteLowReady)
+            goto(stateWriteLow)
           } otherwise {
-            // Initiate read low word.
-            io.sdram.rd_addr := io.host.mem_addr.asBits(23 downto 0)   // FIXME: word32 or word16 address?
-            io.sdram.rd_enable := True
-            goto(stateWaitReadLowReady)
+            goto(stateRead)
           }
         }
       }
-
-    stateWaitReadLowReady
+    stateWriteLow
       .whenIsActive {
-        when (!io.sdram.busy & io.sdram.rd_ready) {
-          // Capture the low word
-          readDataLow := io.sdram.rd_data
-          goto(stateWaitReadHighReady)
+        io.sdram.wr_addr := io.host.mem_addr.asBits(23 downto 0)
+        io.sdram.wr_data :=  io.host.mem_wdata.asBits.asBits(15 downto 0)
+        io.sdram.wr_enable := True
+        when(io.sdram.busy) {
+          goto (stateWaitWriteLowBusy)
+        }
+      }
+    stateWaitWriteLowBusy
+      .whenIsActive {
+        io.sdram.wr_addr := io.host.mem_addr.asBits(23 downto 0)
+        io.sdram.wr_data :=  io.host.mem_wdata.asBits.asBits(15 downto 0)
+        io.sdram.wr_enable := False
+        when(!io.sdram.busy) {
+          goto (stateWriteHigh)
+        }
+      }
+    stateWriteHigh
+      .whenIsActive {
+        io.sdram.wr_addr := (io.host.mem_addr + 1)asBits(23 downto 0)
+        io.sdram.wr_data :=  io.host.mem_wdata.asBits.asBits(31 downto 16)
+        io.sdram.wr_enable := True
+        when(io.sdram.busy) {
+          goto (stateWaitWriteHighBusy)
+        }
+      }
+    stateWaitWriteHighBusy
+      .whenIsActive {
+        io.sdram.wr_addr := (io.host.mem_addr + 1)asBits(23 downto 0)
+        io.sdram.wr_data :=  io.host.mem_wdata.asBits.asBits(31 downto 16)
+        io.sdram.wr_enable := False
+        when(!io.sdram.busy) {
+          goto (stateIdle)
         }
       }
       .onExit {
-        // Initiate read high word
-        io.sdram.rd_addr := (io.host.mem_addr + 1).asBits(23 downto 0)   // FIXME: word32 or word16 address?
-        io.sdram.rd_enable := True
+        ready := True
       }
 
-    stateWaitReadHighReady
+
+
+    /*
+    stateRead
+      .onEntry {
+        rd_addr := address.asBits
+        rd_enable := True
+      }
+      .whenIsActive {
+        when(io.sdram.busy) {
+          goto (stateWaitReadReady)
+        }
+      }
+      .onExit {
+        rd_enable := False
+      }
+    stateWaitReadReady
       .whenIsActive {
         when(io.sdram.rd_ready) {
-          // Capture high word
-          io.host.mem_rdata := (readDataLow ## io.sdram.rd_data).asSInt 
-          goto (stateWaitHostCommand)
+          when (io.sdram.rd_data === hash(address).asBits(15 downto 0)) {
+            rd_data := io.sdram.rd_data
+            goto (stateIdle)
+          } otherwise {
+            goto (stateAbend)
+          }
         }
       }
-      .onExit {
-        io.sdram.rd_enable := False
-      }
-
-    stateWaitWriteLowReady
-      .whenIsActive {
-          when (!io.sdram.busy) {
-            // Write cycle: High word
-            io.sdram.wr_addr := (io.host.mem_addr + 1).asBits(23 downto 0)   // FIXME: word32 or word16 address?
-            io.sdram.wr_data := io.host.mem_wdata.asBits(31 downto 16)
-            io.sdram.wr_enable := True
-            goto(stateWaitHostCommand)
-          }
-      }
-      .onExit {
-        io.sdram.wr_enable := False
-        io.host.mem_ready := True
-      }
+*/
+    // Shared bus myst be driven low when not in use.
+    when (request) {
+      io.host.mem_ready := ready
+      io.host.mem_rdata := rdata
+    } otherwise {
+      io.host.mem_ready := False
+      io.host.mem_rdata := 0
+    }
   }
 }
 

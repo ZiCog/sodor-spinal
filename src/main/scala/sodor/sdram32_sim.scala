@@ -7,10 +7,39 @@ import spinal.core.sim._
 
 import scala.util.Random
 
+
+
+
 object Sdram32_sim {
+
+  def printDut (dut : Sdram32) = {
+    print(dut.io.host.mem_valid.toBoolean)
+    print("\t\t")
+    print(dut.io.sdram.wr_addr.toInt)
+    print("\t")
+    print(dut.io.sdram.wr_data.toInt.toHexString.toUpperCase)
+    print("\t")
+    print(dut.io.sdram.wr_enable.toBoolean)
+    print("\t\t")
+    print(dut.io.sdram.rd_addr.toInt)
+    print("\t")
+    print(dut.io.sdram.rd_data.toInt.toHexString.toUpperCase)
+    print("\t")
+    print(dut.io.sdram.rd_enable.toBoolean)
+    print("\t\t")
+    print(dut.io.sdram.rd_ready.toBoolean)
+    print("\t\t")
+    print(dut.io.sdram.busy.toBoolean)
+    print("\t\t")
+    print(dut.io.host.mem_ready.toBoolean)
+    println()
+  } 
 
   def write32 (dut : Sdram32, address: Int, data: Int) = {
     assert((address & 0x03) == 0)
+
+    println("mem_valid\twr_addr\twr_data\twr_enable\trd_addr\trd_data\trd_enable\trd_ready\tbusy\t\tmem_ready")
+    printDut(dut)
 
     // Drive inputs for write operation.
     dut.io.host.enable #= true
@@ -20,41 +49,64 @@ object Sdram32_sim {
     dut.io.host.mem_wdata #= data
     dut.io.host.mem_addr #= address
 
-
     // Drive SDRAM inputs
-    dut.io.sdram.rd_data #= 42 
+    dut.io.sdram.rd_data #= 32000 
     dut.io.sdram.rd_ready #= false
     dut.io.sdram.busy #= false
 
+    dut.clockDomain.waitRisingEdge()
+    printDut(dut)
+    
+    dut.clockDomain.waitRisingEdge()
+    printDut(dut)
 
-    // Wait for a rising edge on the clock
+    println ("Set busy")
+    dut.io.sdram.busy #= true
     dut.clockDomain.waitRisingEdge()
+    printDut(dut)
     dut.clockDomain.waitRisingEdge()
+    printDut(dut)
     dut.clockDomain.waitRisingEdge()
+    printDut(dut)
     dut.clockDomain.waitRisingEdge()
+    printDut(dut)
+    println ("Clear busy")
+    dut.io.sdram.busy #= false
+
     dut.clockDomain.waitRisingEdge()
+    printDut(dut)
     dut.clockDomain.waitRisingEdge()
+    printDut(dut)
+
+    println ("Set busy")
+    dut.io.sdram.busy #= true
     dut.clockDomain.waitRisingEdge()
-    println("2. sdram.wr_addr = ", dut.io.sdram.rd_addr.toInt)
-    print(dut.io.sdram.rd_addr.toInt)
-    print(" ")
-    print(dut.io.sdram.wr_addr.toInt)
-    print(" ")
-    print(dut.io.sdram.wr_data.toInt)
-    print(" ")
-    print(dut.io.sdram.wr_enable.toBoolean)
-    print(" ")
-    print(dut.io.sdram.rd_enable.toBoolean)
-    print(" ")
-    println()
+    printDut(dut)
+    dut.clockDomain.waitRisingEdge()
+    printDut(dut)
+    dut.clockDomain.waitRisingEdge()
+    printDut(dut)
+    dut.clockDomain.waitRisingEdge()
+    printDut(dut)
+    println ("Clear busy")
+    dut.io.sdram.busy #= false
+
+    dut.clockDomain.waitRisingEdge()
+    printDut(dut)
+    assert(dut.io.host.mem_ready.toBoolean)
 
     // Drive inputs to idle again
+    println ("Clear write request")
     dut.io.host.enable #= false
     dut.io.host.mem_valid #= false
     dut.io.host.mem_instr #= false
     dut.io.host.mem_wstrb #= 0
     dut.io.host.mem_wdata #= 0
     dut.io.host.mem_addr #= 0
+    dut.clockDomain.waitRisingEdge()
+    printDut(dut)
+    assert(!dut.io.host.mem_ready.toBoolean)
+    assert(dut.io.host.mem_rdata.toInt == 0)
   }
 
   def write16 (dut : Sdram32, address: Int, data: Int) = {
@@ -188,7 +240,7 @@ object Sdram32_sim {
 
     val width = 32
     val depth = 16 * 1024 * 1024
-    val maxAddress = 64
+    val maxAddress = 1
     
     val compiled = SimConfig.withWave.compile {
       val dut = new Sdram32(width, depth)
@@ -196,23 +248,34 @@ object Sdram32_sim {
       dut
     }
 
-    // Clear RAM and check
+    // Verify 32 bit write cycles
     compiled.doSim("Test 1") { dut =>
 
       // Fork a process to generate the reset and the clock on the DUT
       dut.clockDomain.forkStimulus(period   = 10)
 
+      // Drive inputs to idle
+      println ("Clear write request")
+      dut.io.host.enable #= false
+      dut.io.host.mem_valid #= false
+      dut.io.host.mem_instr #= false
+      dut.io.host.mem_wstrb #= 0
+      dut.io.host.mem_wdata #= 0
+      dut.io.host.mem_addr #= 0
+      dut.clockDomain.waitRisingEdge()
+
       var address = 0
-      while (address < maxAddress) {
-        write32(dut, address, 0)
-        address = address + 4
-      }
-      address = 0
-      while (address < maxAddress) {
-        val res = read32(dut, address)
-        assert(res.toInt == 0)
-        address = address + 4
-      }
+      var data = 0x22221111
+      write32(dut, address, data)
+/*
+      address = address + 4
+      data = 0x44443333
+      write32(dut, address, data)
+
+      address = address + 4
+      data = 0x66665555
+      write32(dut, address, data)
+*/
       println("PASS")
     }
 /*
