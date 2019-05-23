@@ -145,9 +145,11 @@ The Memory module is not currently used by Sodor but is working well with the pi
 
 ## SDRAM Module
 
-Inclued here is an SDRAM controller in Verilog by stffrdhrn. See: https://github.com/stffrdhrn/sdram-controller 
+Inclued here is a Spinal black box wrapping the SDRAM controller in Verilog by stffrdhrn. See: https://github.com/stffrdhrn/sdram-controller 
 
-A test of the controller in Scala/SpinalHDL for Quartus and the Teraasic DEO-Nano board is built with:
+### sdram_controller_tb
+
+sdram_controller_tb.scala is a test of the controller in Scala/SpinalHDL for Quartus and the Teraasic DEO-Nano board is built with:
 
 ```sh
     $ cd sodor-spinal
@@ -158,6 +160,28 @@ This produces a test bench for the SDRAM controller in quartus/sdram_controller_
 Status: 2019-05-17 :
 
 The SDRAM test project, sdram_controller_tb.qpf, runs on a DEO-Nano board. It fills the SDRAM once and then repeatedly verifies the contents. All LEDs are illuminated whilst this happens. On error the pattern 10101010 is displayed.
+
+### sdram32_sim
+
+sdram32.scala is a 32 bit wide interface to the SDRAM controller conforming to the picorv32 memory bus interface. This simulation exercises it: Run as:
+
+```sh
+    $ cd sodor-spinal
+    $ sbt "run-main sodor.Sdram32_sim"
+```
+Does not yet support write masks for 16 and 8 bit writes.
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
