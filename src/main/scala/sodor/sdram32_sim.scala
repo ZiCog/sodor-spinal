@@ -113,7 +113,7 @@ object Sdram32_sim {
     assert(dut.io.host.mem_rdata.toInt == 0)
   }
 
-  def read32 (dut : Sdram32, address: Int) = {
+  def read32 (dut : Sdram32, address: Int, expect: Int) = {
     assert((address & 0x03) == 0)
 
     println("mem_valid\twr_addr\twr_data\twr_enable\trd_addr\trd_data\trd_enable\trd_ready\tbusy\t\tmem_ready\tmem_rdata")
@@ -148,7 +148,7 @@ object Sdram32_sim {
         printDut(dut)
     */
     println ("Set the read low data and clear busy")
-    dut.io.sdram.rd_data #= 0x5555
+    dut.io.sdram.rd_data #= expect & 0xffff
     dut.io.sdram.busy #= false
     dut.clockDomain.waitRisingEdge()
     printDut(dut)
@@ -170,12 +170,15 @@ object Sdram32_sim {
         printDut(dut)
     */
     println ("Set the high read data clear busy")
-    dut.io.sdram.rd_data #= 0xAAAA
+    dut.io.sdram.rd_data #= (expect >> 16) & 0xffff
     dut.io.sdram.busy #= false
     dut.clockDomain.waitRisingEdge()
     printDut(dut)
     assert(dut.io.sdram. wr_enable.toBoolean == false)
     assert(dut.io.host.mem_ready.toBoolean)
+
+    // Capture the word read
+    val result = dut.io.host.mem_rdata.toInt
 
     // Drive inputs to idle again
     println ("Clear write request")
@@ -189,7 +192,8 @@ object Sdram32_sim {
     printDut(dut)
     assert(dut.io.host.mem_ready.toBoolean == false)
     assert(dut.io.host.mem_rdata.toInt == 0)
-    0xAAAA5555   // FIXME: Return actual result !
+
+    result
   }
 
   def main(args: Array[String]) {
@@ -200,7 +204,6 @@ object Sdram32_sim {
     
     val compiled = SimConfig.withWave.compile {
       val dut = new Sdram32(width, depth)
-      //dut.io.sdram.rd_data.simPublic()
       dut
     }
 
@@ -249,9 +252,15 @@ object Sdram32_sim {
       dut.io.host.mem_addr #= 0
       dut.clockDomain.waitRisingEdge()
 
-      val address = 0
-      val res = read32(dut, address)
-      assert(0xAAAA5555 == res.toInt)
+      var address = 0
+      var expect = 0x66665555
+      var res = read32(dut, address, expect)
+      assert(res == expect)
+
+      address = 4
+      expect = 0x88887777
+      res = read32(dut, address, expect)
+      assert(res == expect)
 
       println("PASS")
     }
