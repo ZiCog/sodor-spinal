@@ -33,26 +33,21 @@ class Sdram32 (width : Int, depth : Int)   extends Component {
     }
   }
 
-  val rd_addr = Reg(Bits (24 bit)) init 0
+//  val rd_addr = Reg(Bits (24 bit)) init 0
   val rd_enable = Reg(Bool) init False
 
-  io.sdram.wr_addr := 0   // FIXME: We need this?
-  rd_addr := 0   // FIXME: We need this?
+  io.sdram.wr_addr := 0
+  io.sdram.rd_addr := 0
   rd_enable := False    // FIXME: We need this?
 
-  io.sdram.rd_addr := rd_addr
   io.sdram.rd_enable := rd_enable
 
-  val rdata = Reg (SInt(width bits)) init 0
+  val rdataLow = Reg (Bits(16 bits)) init 0
   val ready = Bool
   ready := False
   val request = Bool
   val done = Reg(Bool) init False
   request := io.host.enable & io.host.mem_valid
-
-  rdata := 0    // FIXME: We need this?
-
-  val readDataLow = Reg (Bits (16 bit)) init 0
 
   io.sdram.wr_enable := False
   io.sdram.wr_data := 0
@@ -63,8 +58,10 @@ class Sdram32 (width : Int, depth : Int)   extends Component {
     val stateWaitWriteLowBusy = new State
     val stateWriteHigh= new State
     val stateWaitWriteHighBusy = new State
-    val stateRead = new State
-    val stateWaitReadReady = new State
+    val stateReadLow = new State
+    val stateWaitReadLowBusy = new State
+    val stateReadHigh= new State
+    val stateWaitReadHighBusy = new State
 
     always {
       when (!(io.host.enable & io.host.mem_valid)) {
@@ -83,7 +80,9 @@ class Sdram32 (width : Int, depth : Int)   extends Component {
             io.sdram.wr_enable := True
             goto(stateWriteLow)
           } otherwise {
-            goto(stateRead)
+            io.sdram.rd_addr := io.host.mem_addr.asBits(23 downto 0)
+            io.sdram.rd_enable := True
+            goto(stateReadLow)
           }
         }
       }
@@ -100,7 +99,7 @@ class Sdram32 (width : Int, depth : Int)   extends Component {
       .whenIsActive {
         io.sdram.wr_addr := io.host.mem_addr.asBits(23 downto 0)
         io.sdram.wr_data :=  io.host.mem_wdata.asBits.asBits(15 downto 0)
-        io.sdram.wr_enable := False
+        io.sdram.wr_enable := False           // FIXME: Do we need to go low here? Can't we do back to back writes?
         when(!io.sdram.busy) {
           goto (stateWriteHigh)
         }
@@ -127,38 +126,47 @@ class Sdram32 (width : Int, depth : Int)   extends Component {
         ready := True
       }
 
-
-
-    /*
-    stateRead
-      .onEntry {
-        rd_addr := address.asBits
-        rd_enable := True
-      }
+    stateReadLow
       .whenIsActive {
+        io.sdram.rd_addr := io.host.mem_addr.asBits(23 downto 0)
+        io.sdram.rd_enable := True
         when(io.sdram.busy) {
-          goto (stateWaitReadReady)
+          goto (stateWaitReadLowBusy)
+        }
+      }
+    stateWaitReadLowBusy
+      .whenIsActive {
+        io.sdram.rd_addr := io.host.mem_addr.asBits(23 downto 0)
+        io.sdram.rd_enable := False          // FIXME: Do we need to go low here? Can't we do back to back reads?
+        when(!io.sdram.busy) {
+          rdataLow := io.sdram.rd_data
+          goto (stateReadHigh)
+        }
+      }
+    stateReadHigh
+      .whenIsActive {
+        io.sdram.rd_addr := (io.host.mem_addr + 1)asBits(23 downto 0)
+        io.sdram.rd_enable := True
+        when(io.sdram.busy) {
+          goto (stateWaitReadHighBusy)
+        }
+      }
+    stateWaitReadHighBusy
+      .whenIsActive {
+        io.sdram.rd_addr := (io.host.mem_addr + 1)asBits(23 downto 0)
+        io.sdram.rd_enable := False
+        when(!io.sdram.busy) {
+          goto (stateIdle)
         }
       }
       .onExit {
-        rd_enable := False
+        ready := True
       }
-    stateWaitReadReady
-      .whenIsActive {
-        when(io.sdram.rd_ready) {
-          when (io.sdram.rd_data === hash(address).asBits(15 downto 0)) {
-            rd_data := io.sdram.rd_data
-            goto (stateIdle)
-          } otherwise {
-            goto (stateAbend)
-          }
-        }
-      }
-*/
-    // Shared bus myst be driven low when not in use.
+
+    // Shared bus must be driven low when not in use.
     when (request) {
       io.host.mem_ready := ready
-      io.host.mem_rdata := rdata
+      io.host.mem_rdata := (io.sdram.rd_data ##  rdataLow).asSInt
     } otherwise {
       io.host.mem_ready := False
       io.host.mem_rdata := 0
