@@ -21,7 +21,8 @@ class pll_sys() extends BlackBox {
   }
 
   // Merge RTL sources into output
-  addRTLPath("./sdram_controller_tb.v")
+  //addRTLPath("./sdram_controller_tb.v")
+  addRTLPath("./sdram32_tb.v")      // FIXME: These paths are a mess!
 
   // Suppress the "io_" prefix on module connection names in the Verilog output.
   noIoPrefix()
