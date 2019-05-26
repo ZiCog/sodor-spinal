@@ -28,6 +28,9 @@ class sdram32_tb extends Component {
     val DRAM_WE_N = out Bool
   }
 
+  // Suppress the "io_" prefix on module connection names in Verilog output.
+  noIoPrefix()
+
   // Create a new clock domain named 'core' to use the 100MHz clock from the PLL
   val coreClockDomain = ClockDomain.internal (
     name = "core",
@@ -78,6 +81,7 @@ class sdram32_tb extends Component {
     sdram32.io.sdram.rd_data := sdram.io.rd_data
     sdram32.io.sdram.rd_ready := sdram.io.rd_ready
 
+
     // A really bad random number
     def hash(n: UInt): UInt = {
       n * 27146105
@@ -122,11 +126,12 @@ class sdram32_tb extends Component {
       sdram32.io.host.mem_ready
     }
 
+    val address = Reg (UInt (32 bits)) init 0
+
     cmdIdle()
-    val address = UInt(32 bits)
-    address := 0xad
-    val data = Reg (SInt (32 bits)) init 0x55555555
-    io.LED := data.asBits(7 downto 0)
+
+    val data = Reg (SInt (32 bits)) init 0
+    io.LED := data.asBits(31 downto 24)
 
     val SDRAM32ReadWriteFSM = new StateMachine {
       val stateIdle = new State with EntryPoint
@@ -148,7 +153,8 @@ class sdram32_tb extends Component {
 
       stateWrite
         .whenIsActive {
-          cmdWrite32(address, data)
+          cmdWrite32(address, address.asSInt)
+          address := address + 1
           when (isReady()) {
             goto(stateRead)
           }
@@ -156,8 +162,10 @@ class sdram32_tb extends Component {
 
       stateRead
         .whenIsActive {
+          cmdRead32(address)
           data := read32()
           when (isReady()) {
+            data := read32()
             goto(stateIdle)
           }
         }
