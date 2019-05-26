@@ -13,7 +13,7 @@ class Sdram32 (width : Int, depth : Int)   extends Component {
       val mem_instr = in Bool
       val mem_wstrb = in UInt(width / 8 bits)
       val mem_wdata = in SInt(width bits)
-      val mem_addr = in UInt ((Math.log10(depth * 4)/Math.log10(2.0)).toInt  bits)
+      val mem_addr = in UInt (32 bits)
 
       val mem_rdata = out SInt(width bits)
       val mem_ready = out Bool
@@ -46,7 +46,6 @@ class Sdram32 (width : Int, depth : Int)   extends Component {
   val ready = Bool
   ready := False
   val request = Bool
-  val done = Reg(Bool) init False
   request := io.host.enable & io.host.mem_valid
 
   io.sdram.wr_enable := False
@@ -177,7 +176,8 @@ class Sdram32 (width : Int, depth : Int)   extends Component {
 object sdram32Verilog {
   def main(args: Array[String]): Unit = {
     val report = SpinalVerilog(new Sdram32(32, 16 * 1024 * 1024))
-    report.mergeRTLSource("quartus/sdram_controller_tb/sdram32") // Merge all rtl sources into sdram32.v file
+//    report.mergeRTLSource("quartus/sdram_controller_tb/sdram32") // Merge all rtl sources into sdram32.v file
+//    report.mergeRTLSource("quartus/sdram32_tb/sdram32") // Merge all rtl sources into sdram32.v file
     report.printPruned()
   }
 }
