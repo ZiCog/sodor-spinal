@@ -178,7 +178,8 @@ class sdram_controller_tb extends Component {
   }
 }
 
-object SDRAMVerilog {
+
+object sdram_controller_tb_verilog {
   def main(args: Array[String]): Unit = {
     val report = SpinalVerilog(new sdram_controller_tb)
     report.mergeRTLSource("quartus/sdram_controller_tb/sdram_controller_tb") // Merge all rtl sources into sdram_controller_tb.v file
