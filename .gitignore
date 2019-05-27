@@ -34,7 +34,11 @@ bin/
 *.json
 *.vcd
 !tester/src/test/resources/*.vhd
-
+*.rpt
+*.summary
+*.smsg
+*.sof
+*.done
 
 simWorkspace/
 tmp/
