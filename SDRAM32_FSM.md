@@ -41,7 +41,7 @@
                 1           busy == true        2           rd_enable := false
     ----------------------------------------------------------------------------------
     read2       2           rd_ready == false   2           -
-                2           rd_ready == true                LOW(mem_rdata) := rd_data   ; Latch read low data here
+                2           rd_ready == true    3           LOW(mem_rdata) := rd_data   ; Latch read low data here
     ----------------------------------------------------------------------------------
     read3       3           busy == true        3           -
                 3           busy == false       4           rd_addr := mem_addr + 1
