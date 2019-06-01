@@ -23,8 +23,8 @@
 
 ## Aliases:
 
-hostWriteCmd = enable & mem_valid & (mem_wrstrb != 0)
-hostReadCmd  = enable & mem_valid & (mem_wrstrb == 0)
+    hostWriteCmd = enable & mem_valid & (mem_wrstrb != 0)
+    hostReadCmd  = enable & mem_valid & (mem_wrstrb == 0)
 
 ## Truth table:
 
