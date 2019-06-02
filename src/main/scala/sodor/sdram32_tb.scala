@@ -75,7 +75,7 @@ class sdram32_tb extends Component {
     sdram.io.wr_data <> sdram32.io.sdram.wr_data
     sdram.io.wr_enable <> sdram32.io.sdram.wr_enable
     sdram.io.rd_enable <> sdram32.io.sdram.rd_enable
-    sdram.io.rst_n <> coreClockDomain.reset
+    sdram.io.rst_n <> !coreClockDomain.reset
 
     sdram32.io.sdram.busy := sdram.io.busy
     sdram32.io.sdram.rd_data := sdram.io.rd_data
@@ -102,7 +102,7 @@ class sdram32_tb extends Component {
       sdram32.io.host.enable := True
       sdram32.io.host.mem_valid := True
       sdram32.io.host.mem_instr := False
-      sdram32.io.host.mem_wstrb := 0xF
+      sdram32.io.host.mem_wstrb := U"1111"
       sdram32.io.host.mem_wdata := data
       sdram32.io.host.mem_addr := address
     }
@@ -131,7 +131,9 @@ class sdram32_tb extends Component {
     cmdIdle()
 
     val data = Reg (SInt (32 bits)) init 0
-    io.LED := data.asBits(31 downto 24)
+
+    io.LED := data.asBits(7 downto 0)
+//    io.LED := sdram32.io.LED
 
     val SDRAM32ReadWriteFSM = new StateMachine {
       val stateIdle = new State with EntryPoint
@@ -144,6 +146,9 @@ class sdram32_tb extends Component {
       }
 
       stateIdle
+        .onEntry {
+          address := address + 0
+        }
         .whenIsActive {
           cmdIdle()
           when (!isReady()) {
@@ -153,8 +158,7 @@ class sdram32_tb extends Component {
 
       stateWrite
         .whenIsActive {
-          cmdWrite32(address, address.asSInt)
-          address := address + 1
+          cmdWrite32(address, S"h55555555")
           when (isReady()) {
             goto(stateRead)
           }
@@ -163,7 +167,6 @@ class sdram32_tb extends Component {
       stateRead
         .whenIsActive {
           cmdRead32(address)
-          data := read32()
           when (isReady()) {
             data := read32()
             goto(stateIdle)

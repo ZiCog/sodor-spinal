@@ -1,4 +1,4 @@
-#SDRAM32 driver Finite State Machine
+# SDRAM32 driver Finite State Machine
 
 ## SDRAM Device Interface:
 
