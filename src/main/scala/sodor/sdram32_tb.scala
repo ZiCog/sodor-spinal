@@ -58,7 +58,7 @@ class sdram32_tb extends Component {
     // Instantiate the SDRAM 32 interface
     val sdram32 = new Sdram32(32, 8 * 1024 * 1024)
 
-    // Connect all the SDRAM signals to the outside world
+    // Connect all the SDRAM controler signals to the outside world
     io.DRAM_ADDR   <> sdram.io.addr
     io.DRAM_BA     <> sdram.io.bank_addr
     io.DRAM_DQ     := sdram.io.data
@@ -70,6 +70,7 @@ class sdram32_tb extends Component {
     io.DRAM_DQM(0) <> sdram.io.data_mask_low
     io.DRAM_DQM(1) <> sdram.io.data_mask_high
 
+    // Connect SDRAM32 driver to SDRM controller
     sdram.io.rd_addr <> sdram32.io.sdram.rd_addr
     sdram.io.wr_addr <> sdram32.io.sdram.wr_addr
     sdram.io.wr_data <> sdram32.io.sdram.wr_data
@@ -81,102 +82,118 @@ class sdram32_tb extends Component {
     sdram32.io.sdram.rd_data := sdram.io.rd_data
     sdram32.io.sdram.rd_ready := sdram.io.rd_ready
 
+    // Registers to drive/receive SRRAM32 host interface
+    val enable = Reg(Bool) init False
+    val mem_valid = Reg (Bool) init False
+    val mem_instr = Reg (Bool) init False
+    val mem_wstrb = Reg (UInt(4 bits)) init 0
+    val mem_wdata = Reg (SInt(32 bits)) init 0
+    val mem_addr  = Reg (UInt(32 bits)) init 0
+    val mem_rdata = Reg (SInt(32 bits)) init 0
+    val mem_ready = Reg (Bool) init False
+
+    // Connect up SDRAM32 host interface bus
+    sdram32.io.host.enable := enable
+    sdram32.io.host.mem_valid := mem_valid
+    sdram32.io.host.mem_instr := mem_instr
+    sdram32.io.host.mem_wstrb := mem_wstrb
+    sdram32.io.host.mem_wdata := mem_wdata
+    sdram32.io.host.mem_addr := mem_addr
+    mem_rdata := sdram32.io.host.mem_rdata
+    mem_ready := sdram32.io.host.mem_ready
+
+    // Drive SDRAM32 host interface bus to idle state
+    enable := False
+    mem_valid := False
+    mem_instr := False
+    mem_wstrb := 0
+    mem_wdata := 0
+    mem_addr := 0
 
     // A really bad random number
     def hash(n: UInt): UInt = {
       n * 27146105
     }
 
-    // Drive idle on bus
-    def cmdIdle () {
-      sdram32.io.host.enable := False
-      sdram32.io.host.mem_valid := False
-      sdram32.io.host.mem_instr := False
-      sdram32.io.host.mem_wstrb := 0
-      sdram32.io.host.mem_wdata := 0
-      sdram32.io.host.mem_addr := 0
-    }
-
-    // Drive write command onto bus
-    def cmdWrite32 (address: UInt, data:SInt) {
-      sdram32.io.host.enable := True
-      sdram32.io.host.mem_valid := True
-      sdram32.io.host.mem_instr := False
-      sdram32.io.host.mem_wstrb := U"1111"
-      sdram32.io.host.mem_wdata := data
-      sdram32.io.host.mem_addr := address
-    }
-
-    // Drive read command onto bus
-    def cmdRead32 (address: UInt)= {
-      sdram32.io.host.enable := True
-      sdram32.io.host.mem_valid := True
-      sdram32.io.host.mem_instr := False
-      sdram32.io.host.mem_wstrb := 0
-      sdram32.io.host.mem_wdata := 0
-      sdram32.io.host.mem_addr := address
-    }
-
-    // Read the data
-    def read32 () : SInt = {
-      sdram32.io.host.mem_rdata
-    }
-    // Test for ready signal
-    def isReady () : Bool = {
-      sdram32.io.host.mem_ready
-    }
-
     val address = Reg (UInt (32 bits)) init 0
-
-    cmdIdle()
+    address := 4 + 16 + 64
 
     val data = Reg (SInt (32 bits)) init 0
 
+    val timer = Reg (SInt (32 bits)) init 0
+    timer := timer + 1
+    when (timer === 100000000) {
+      timer := 0
+      data := data + 1
+      address := address + 4
+    }
+
     io.LED := data.asBits(7 downto 0)
-//    io.LED := sdram32.io.LED
 
     val SDRAM32ReadWriteFSM = new StateMachine {
-      val stateIdle = new State with EntryPoint
-      val stateWrite = new State
-      val stateRead = new State
-      val stateAbend = new State
+      val state0 = new State with EntryPoint
+      val state1 = new State
+      val state2 = new State
+      val state3 = new State
+      val state4 = new State
+      val state5 = new State
+      val state6 = new State
 
-      always {
-  //        cmdIdle()
+      state0
+        // Idle the bus
+        .whenIsActive {
+          enable := False
+          mem_valid := False
+          mem_wstrb := 0
+          goto(state1)
       }
-
-      stateIdle
-        .onEntry {
-          address := address + 0
-        }
+      state1
+        // Start write cycle
         .whenIsActive {
-          cmdIdle()
-          when (!isReady()) {
-            goto(stateWrite)
+          enable := True
+          mem_valid := True
+          mem_wstrb := U"1111"
+          mem_wdata := data
+          mem_addr := address
+          goto(state2)
+        }
+      state2
+        // Wait for memory ready
+        .whenIsActive {
+          when(mem_ready) {
+            goto(state3)
           }
         }
-
-      stateWrite
+      state3
+        // Idle the bus
         .whenIsActive {
-          cmdWrite32(address, S"h55555555")
-          when (isReady()) {
-            goto(stateRead)
+          enable := False
+          mem_valid := False
+          mem_wstrb := 0
+          goto (state4)
+        }
+      state4
+        // Start read cycle
+        .whenIsActive {
+          enable := True
+          mem_valid := True
+          mem_addr := address
+          goto (state5)
+        }
+      state5
+        // Wait for memory ready
+        .whenIsActive {
+          when(mem_ready) {
+            goto(state6)
           }
         }
-
-      stateRead
+      state6
+        // Read the data
         .whenIsActive {
-          cmdRead32(address)
-          when (isReady()) {
-            data := read32()
-            goto(stateIdle)
+          when(mem_ready) {
+            data := mem_rdata
+            goto(state0)
           }
-        }
-
-      stateAbend
-        .whenIsActive {
-          cmdIdle()
-          goto (stateIdle)
         }
     }
   }
